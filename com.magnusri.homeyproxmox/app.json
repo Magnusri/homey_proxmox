@@ -1,0 +1,69 @@
+{
+  "_comment": "This file is generated. Please edit .homeycompose/app.json instead.",
+  "id": "com.magnusri.homeyproxmox",
+  "version": "1.0.0",
+  "compatibility": ">=12.4.0",
+  "author": "Magnus Ingwersen",
+  "sdk": 3,
+  "platforms": [
+    "local"
+  ],
+  "name": {
+    "en": "Proxmox"
+  },
+  "description": {
+    "en": "Proxmox cluster support"
+  },
+  "category": [
+    "tools"
+  ],
+  "permissions": [],
+  "images": {
+    "small": "/assets/images/small.png",
+    "large": "/assets/images/large.png",
+    "xlarge": "/assets/images/xlarge.png"
+  },
+  "drivers": [
+    {
+      "name": {
+        "en": "Proxmox"
+      },
+      "class": "service",
+      "capabilities": [
+        "alarm_connectivity",
+        "alarm_generic",
+        "alarm_heat",
+        "alarm_lost",
+        "onoff"
+      ],
+      "platforms": [
+        "local"
+      ],
+      "connectivity": [
+        "lan"
+      ],
+      "pair": [
+        {
+          "id": "login"
+        },
+        {
+          "id": "list_devices",
+          "template": "list_devices",
+          "navigation": {
+            "next": "add_devices"
+          }
+        },
+        {
+          "id": "add_devices",
+          "template": "add_devices"
+        }
+      ],
+      "images": {
+        "small": "/drivers/proxmox/assets/images/small.png",
+        "large": "/drivers/proxmox/assets/images/large.png",
+        "xlarge": "/drivers/proxmox/assets/images/xlarge.png"
+      },
+      "id": "proxmox"
+    }
+  ]
+}

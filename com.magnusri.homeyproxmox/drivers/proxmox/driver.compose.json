@@ -1,0 +1,38 @@
+{
+  "name": {
+    "en": "Proxmox"
+  },
+  "class": "service",
+  "capabilities": [
+    "alarm_connectivity",
+    "alarm_generic",
+    "alarm_heat",
+    "alarm_lost",
+    "onoff"
+  ],
+  "platforms": [
+    "local"
+  ],
+  "connectivity": [
+    "lan"
+  ],
+  "pair": [
+    {
+      "id": "login"
+    },
+    {
+      "id": "list_devices",
+      "template": "list_devices",
+      "navigation": { "next": "add_devices" }
+    },
+    {
+      "id": "add_devices",
+      "template": "add_devices"
+    }
+  ],
+  "images": {
+    "small": "{{driverAssetsPath}}/images/small.png",
+    "large": "{{driverAssetsPath}}/images/large.png",
+    "xlarge": "{{driverAssetsPath}}/images/xlarge.png"
+  }
+}

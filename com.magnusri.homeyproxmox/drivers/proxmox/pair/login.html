@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+      padding: 20px;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+    input:focus {
+      outline: none;
+      border-color: #4CAF50;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 500;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+    .error {
+      color: #f44336;
+      margin-top: 10px;
+      display: none;
+    }
+    .help-text {
+      font-size: 12px;
+      color: #666;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Connect to Proxmox</h2>
+  
+  <form id="loginForm">
+    <div class="form-group">
+      <label for="host">Proxmox Host</label>
+      <input type="text" id="host" name="host" placeholder="192.168.1.100" required>
+      <div class="help-text">IP address or hostname of your Proxmox server</div>
+    </div>
+
+    <div class="form-group">
+      <label for="port">Port</label>
+      <input type="number" id="port" name="port" value="8006" required>
+      <div class="help-text">Default Proxmox port is 8006</div>
+    </div>
+
+    <div class="form-group">
+      <label for="tokenID">Token ID</label>
+      <input type="text" id="tokenID" name="tokenID" placeholder="user@realm!tokenname" required>
+      <div class="help-text">Format: user@realm!tokenname (e.g., root@pam!mytoken)</div>
+    </div>
+
+    <div class="form-group">
+      <label for="tokenSecret">Token Secret</label>
+      <input type="password" id="tokenSecret" name="tokenSecret" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" required>
+      <div class="help-text">Your Proxmox API token secret</div>
+    </div>
+
+    <button type="submit" id="submitBtn">Connect</button>
+    <div class="error" id="errorMsg"></div>
+  </form>
+
+  <script>
+    const form = document.getElementById('loginForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const errorMsg = document.getElementById('errorMsg');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const host = document.getElementById('host').value;
+      const port = document.getElementById('port').value;
+      const tokenID = document.getElementById('tokenID').value;
+      const tokenSecret = document.getElementById('tokenSecret').value;
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Connecting...';
+      errorMsg.style.display = 'none';
+
+      try {
+        await Homey.emit('login', { host, port, tokenID, tokenSecret });
+        Homey.nextView();
+      } catch (err) {
+        errorMsg.textContent = err.message || 'Connection failed. Please check your credentials.';
+        errorMsg.style.display = 'block';
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Connect';
+      }
+    });
+  </script>
+</body>
+</html>

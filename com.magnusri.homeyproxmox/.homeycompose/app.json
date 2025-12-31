@@ -1,0 +1,25 @@
+{
+  "id": "com.magnusri.homeyproxmox",
+  "version": "1.0.0",
+  "compatibility": ">=12.4.0",
+  "author": "Magnus Ingwersen",
+  "sdk": 3,
+  "platforms": [
+    "local"
+  ],
+  "name": {
+    "en": "Proxmox"
+  },
+  "description": {
+    "en": "Proxmox cluster support"
+  },
+  "category": [
+    "tools"
+  ],
+  "permissions": [],
+  "images": {
+    "small": "/assets/images/small.png",
+    "large": "/assets/images/large.png",
+    "xlarge": "/assets/images/xlarge.png"
+  }
+}
