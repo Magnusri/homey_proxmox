@@ -13,6 +13,47 @@ module.exports = class ProxmoxDevice extends Homey.Device {
   }
 
   /**
+   * Helper function to round a number to 2 decimal places
+   */
+  roundToTwoDecimals(value) {
+    return Math.round(value * 100) / 100;
+  }
+
+  /**
+   * Helper function to calculate rate from cumulative counters
+   */
+  calculateRate(currentValue, previousValue, intervalSeconds) {
+    if (previousValue === undefined || previousValue === null) {
+      return 0;
+    }
+    const delta = currentValue - previousValue;
+    if (delta < 0) {
+      // Counter reset (e.g., VM restarted), return 0
+      return 0;
+    }
+    // Convert bytes to MB/s
+    const bytesPerSecond = delta / intervalSeconds;
+    const mbPerSecond = bytesPerSecond / (1024 * 1024);
+    return this.roundToTwoDecimals(mbPerSecond);
+  }
+
+  /**
+   * Check and update alarm states based on thresholds
+   */
+  async updateAlarms(cpuPercent, memPercent, isOnline) {
+    // alarm_heat: Trigger when CPU or memory exceeds 90%
+    const isOverheating = (cpuPercent > 90 || memPercent > 90);
+    if (this.hasCapability('alarm_heat')) {
+      await this.setCapabilityValue('alarm_heat', isOverheating);
+    }
+
+    // alarm_connectivity: Trigger when device is offline/unreachable
+    if (this.hasCapability('alarm_connectivity')) {
+      await this.setCapabilityValue('alarm_connectivity', !isOnline);
+    }
+  }
+
+  /**
    * onInit is called when the device is initialized.
    */
   async onInit() {
@@ -23,8 +64,29 @@ module.exports = class ProxmoxDevice extends Homey.Device {
     this.log('Device type:', data.type);
     this.log('Device ID:', data.id);
 
+    // Initialize previous counter values for rate calculations
+    this.previousCounters = {
+      netin: null,
+      netout: null,
+      diskread: null,
+      diskwrite: null,
+      timestamp: Date.now(),
+    };
+
     // Ensure capabilities exist for devices
-    const requiredCapabilities = ['onoff', 'measure_cpu', 'measure_memory', 'measure_disk', 'sensor_uptime'];
+    const requiredCapabilities = [
+      'onoff',
+      'measure_cpu',
+      'measure_memory',
+      'measure_disk',
+      'sensor_uptime',
+      'measure_network_in',
+      'measure_network_out',
+      'measure_disk_read',
+      'measure_disk_write',
+      'alarm_connectivity',
+      'alarm_heat',
+    ];
     if (data.type === 'lxc' || data.type === 'vm' || data.type === 'node') {
       for (const capability of requiredCapabilities) {
         if (!this.hasCapability(capability)) {
@@ -72,17 +134,21 @@ module.exports = class ProxmoxDevice extends Homey.Device {
         const isOnline = status.uptime > 0;
         await this.setCapabilityValue('onoff', isOnline);
 
+        let cpuPercent = 0;
+        let memPercent = 0;
+
         // Update resource metrics
         if (isOnline) {
           // CPU usage (cpu is a decimal like 0.14 for 14%)
           if (status.cpu !== undefined) {
-            await this.setCapabilityValue('measure_cpu', this.roundToOneDecimal(status.cpu * 100));
+            cpuPercent = this.roundToOneDecimal(status.cpu * 100);
+            await this.setCapabilityValue('measure_cpu', cpuPercent);
           }
 
           // Memory usage percentage
           if (status.memory !== undefined && status.maxmem !== undefined && status.maxmem > 0) {
-            const memPercent = (status.memory / status.maxmem) * 100;
-            await this.setCapabilityValue('measure_memory', this.roundToOneDecimal(memPercent));
+            memPercent = this.roundToOneDecimal((status.memory / status.maxmem) * 100);
+            await this.setCapabilityValue('measure_memory', memPercent);
           }
 
           // Disk usage percentage (rootfs for nodes)
@@ -98,7 +164,50 @@ module.exports = class ProxmoxDevice extends Homey.Device {
             const uptimeHours = status.uptime / 3600;
             await this.setCapabilityValue('sensor_uptime', this.roundToOneDecimal(uptimeHours));
           }
+
+          // Calculate I/O rates (nodes may have these fields)
+          const currentTime = Date.now();
+          const intervalSeconds = (currentTime - this.previousCounters.timestamp) / 1000;
+
+          if (intervalSeconds > 0) {
+            // Network I/O rates
+            if (status.netin !== undefined) {
+              const netInRate = this.calculateRate(status.netin, this.previousCounters.netin, intervalSeconds);
+              await this.setCapabilityValue('measure_network_in', netInRate);
+              this.previousCounters.netin = status.netin;
+            }
+
+            if (status.netout !== undefined) {
+              const netOutRate = this.calculateRate(status.netout, this.previousCounters.netout, intervalSeconds);
+              await this.setCapabilityValue('measure_network_out', netOutRate);
+              this.previousCounters.netout = status.netout;
+            }
+
+            // Disk I/O rates (if available for nodes)
+            if (status.diskread !== undefined) {
+              const diskReadRate = this.calculateRate(status.diskread, this.previousCounters.diskread, intervalSeconds);
+              await this.setCapabilityValue('measure_disk_read', diskReadRate);
+              this.previousCounters.diskread = status.diskread;
+            }
+
+            if (status.diskwrite !== undefined) {
+              const diskWriteRate = this.calculateRate(status.diskwrite, this.previousCounters.diskwrite, intervalSeconds);
+              await this.setCapabilityValue('measure_disk_write', diskWriteRate);
+              this.previousCounters.diskwrite = status.diskwrite;
+            }
+
+            this.previousCounters.timestamp = currentTime;
+          }
+        } else {
+          // Reset I/O rates when offline
+          await this.setCapabilityValue('measure_network_in', 0);
+          await this.setCapabilityValue('measure_network_out', 0);
+          await this.setCapabilityValue('measure_disk_read', 0);
+          await this.setCapabilityValue('measure_disk_write', 0);
         }
+
+        // Update alarms
+        await this.updateAlarms(cpuPercent, memPercent, isOnline);
 
         this.log(`Node ${data.node} status: ${status.uptime} (${isOnline ? 'ON' : 'OFF'})`);
       } else if (data.type === 'lxc') {
@@ -109,17 +218,21 @@ module.exports = class ProxmoxDevice extends Homey.Device {
         const isRunning = status.status === 'running';
         await this.setCapabilityValue('onoff', isRunning);
 
+        let cpuPercent = 0;
+        let memPercent = 0;
+
         // Update resource metrics if running
         if (isRunning) {
           // CPU usage (cpu is a decimal)
           if (status.cpu !== undefined) {
-            await this.setCapabilityValue('measure_cpu', this.roundToOneDecimal(status.cpu * 100));
+            cpuPercent = this.roundToOneDecimal(status.cpu * 100);
+            await this.setCapabilityValue('measure_cpu', cpuPercent);
           }
 
           // Memory usage percentage
           if (status.mem !== undefined && status.maxmem !== undefined && status.maxmem > 0) {
-            const memPercent = (status.mem / status.maxmem) * 100;
-            await this.setCapabilityValue('measure_memory', this.roundToOneDecimal(memPercent));
+            memPercent = this.roundToOneDecimal((status.mem / status.maxmem) * 100);
+            await this.setCapabilityValue('measure_memory', memPercent);
           }
 
           // Disk usage percentage
@@ -133,13 +246,54 @@ module.exports = class ProxmoxDevice extends Homey.Device {
             const uptimeHours = status.uptime / 3600;
             await this.setCapabilityValue('sensor_uptime', this.roundToOneDecimal(uptimeHours));
           }
+
+          // Calculate I/O rates
+          const currentTime = Date.now();
+          const intervalSeconds = (currentTime - this.previousCounters.timestamp) / 1000;
+
+          if (intervalSeconds > 0) {
+            // Network I/O rates
+            if (status.netin !== undefined) {
+              const netInRate = this.calculateRate(status.netin, this.previousCounters.netin, intervalSeconds);
+              await this.setCapabilityValue('measure_network_in', netInRate);
+              this.previousCounters.netin = status.netin;
+            }
+
+            if (status.netout !== undefined) {
+              const netOutRate = this.calculateRate(status.netout, this.previousCounters.netout, intervalSeconds);
+              await this.setCapabilityValue('measure_network_out', netOutRate);
+              this.previousCounters.netout = status.netout;
+            }
+
+            // Disk I/O rates
+            if (status.diskread !== undefined) {
+              const diskReadRate = this.calculateRate(status.diskread, this.previousCounters.diskread, intervalSeconds);
+              await this.setCapabilityValue('measure_disk_read', diskReadRate);
+              this.previousCounters.diskread = status.diskread;
+            }
+
+            if (status.diskwrite !== undefined) {
+              const diskWriteRate = this.calculateRate(status.diskwrite, this.previousCounters.diskwrite, intervalSeconds);
+              await this.setCapabilityValue('measure_disk_write', diskWriteRate);
+              this.previousCounters.diskwrite = status.diskwrite;
+            }
+
+            this.previousCounters.timestamp = currentTime;
+          }
         } else {
           // When stopped, set metrics to 0
           await this.setCapabilityValue('measure_cpu', 0);
           await this.setCapabilityValue('measure_memory', 0);
           await this.setCapabilityValue('measure_disk', 0);
           await this.setCapabilityValue('sensor_uptime', 0);
+          await this.setCapabilityValue('measure_network_in', 0);
+          await this.setCapabilityValue('measure_network_out', 0);
+          await this.setCapabilityValue('measure_disk_read', 0);
+          await this.setCapabilityValue('measure_disk_write', 0);
         }
+
+        // Update alarms
+        await this.updateAlarms(cpuPercent, memPercent, isRunning);
 
         this.log(`LXC ${data.vmid} status: ${status.status} (${isRunning ? 'ON' : 'OFF'})`);
       } else if (data.type === 'vm') {
@@ -150,17 +304,21 @@ module.exports = class ProxmoxDevice extends Homey.Device {
         const isRunning = status.status === 'running';
         await this.setCapabilityValue('onoff', isRunning);
 
+        let cpuPercent = 0;
+        let memPercent = 0;
+
         // Update resource metrics if running
         if (isRunning) {
           // CPU usage (cpu is a decimal)
           if (status.cpu !== undefined) {
-            await this.setCapabilityValue('measure_cpu', this.roundToOneDecimal(status.cpu * 100));
+            cpuPercent = this.roundToOneDecimal(status.cpu * 100);
+            await this.setCapabilityValue('measure_cpu', cpuPercent);
           }
 
           // Memory usage percentage
           if (status.mem !== undefined && status.maxmem !== undefined && status.maxmem > 0) {
-            const memPercent = (status.mem / status.maxmem) * 100;
-            await this.setCapabilityValue('measure_memory', this.roundToOneDecimal(memPercent));
+            memPercent = this.roundToOneDecimal((status.mem / status.maxmem) * 100);
+            await this.setCapabilityValue('measure_memory', memPercent);
           }
 
           // Disk usage percentage
@@ -174,18 +332,67 @@ module.exports = class ProxmoxDevice extends Homey.Device {
             const uptimeHours = status.uptime / 3600;
             await this.setCapabilityValue('sensor_uptime', this.roundToOneDecimal(uptimeHours));
           }
+
+          // Calculate I/O rates
+          const currentTime = Date.now();
+          const intervalSeconds = (currentTime - this.previousCounters.timestamp) / 1000;
+
+          if (intervalSeconds > 0) {
+            // Network I/O rates
+            if (status.netin !== undefined) {
+              const netInRate = this.calculateRate(status.netin, this.previousCounters.netin, intervalSeconds);
+              await this.setCapabilityValue('measure_network_in', netInRate);
+              this.previousCounters.netin = status.netin;
+            }
+
+            if (status.netout !== undefined) {
+              const netOutRate = this.calculateRate(status.netout, this.previousCounters.netout, intervalSeconds);
+              await this.setCapabilityValue('measure_network_out', netOutRate);
+              this.previousCounters.netout = status.netout;
+            }
+
+            // Disk I/O rates
+            if (status.diskread !== undefined) {
+              const diskReadRate = this.calculateRate(status.diskread, this.previousCounters.diskread, intervalSeconds);
+              await this.setCapabilityValue('measure_disk_read', diskReadRate);
+              this.previousCounters.diskread = status.diskread;
+            }
+
+            if (status.diskwrite !== undefined) {
+              const diskWriteRate = this.calculateRate(status.diskwrite, this.previousCounters.diskwrite, intervalSeconds);
+              await this.setCapabilityValue('measure_disk_write', diskWriteRate);
+              this.previousCounters.diskwrite = status.diskwrite;
+            }
+
+            this.previousCounters.timestamp = currentTime;
+          }
         } else {
           // When stopped, set metrics to 0
           await this.setCapabilityValue('measure_cpu', 0);
           await this.setCapabilityValue('measure_memory', 0);
           await this.setCapabilityValue('measure_disk', 0);
           await this.setCapabilityValue('sensor_uptime', 0);
+          await this.setCapabilityValue('measure_network_in', 0);
+          await this.setCapabilityValue('measure_network_out', 0);
+          await this.setCapabilityValue('measure_disk_read', 0);
+          await this.setCapabilityValue('measure_disk_write', 0);
         }
+
+        // Update alarms
+        await this.updateAlarms(cpuPercent, memPercent, isRunning);
 
         this.log(`VM ${data.vmid} status: ${status.status} (${isRunning ? 'ON' : 'OFF'})`);
       }
     } catch (error) {
       this.error('Failed to update status:', error.message);
+      // Trigger alarm_generic on error
+      if (this.hasCapability('alarm_generic')) {
+        await this.setCapabilityValue('alarm_generic', true).catch(this.error);
+      }
+      // Trigger alarm_connectivity on error (likely connection issue)
+      if (this.hasCapability('alarm_connectivity')) {
+        await this.setCapabilityValue('alarm_connectivity', true).catch(this.error);
+      }
     }
   }
 

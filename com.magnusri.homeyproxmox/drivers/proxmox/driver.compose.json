@@ -9,10 +9,13 @@
     "measure_memory",
     "measure_disk",
     "sensor_uptime",
+    "measure_network_in",
+    "measure_network_out",
+    "measure_disk_read",
+    "measure_disk_write",
     "alarm_connectivity",
     "alarm_generic",
-    "alarm_heat",
-    "alarm_lost"
+    "alarm_heat"
   ],
   "platforms": [
     "local"

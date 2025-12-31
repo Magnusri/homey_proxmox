@@ -35,10 +35,13 @@
         "measure_memory",
         "measure_disk",
         "sensor_uptime",
+        "measure_network_in",
+        "measure_network_out",
+        "measure_disk_read",
+        "measure_disk_write",
         "alarm_connectivity",
         "alarm_generic",
-        "alarm_heat",
-        "alarm_lost"
+        "alarm_heat"
       ],
       "platforms": [
         "local"
@@ -101,6 +104,34 @@
       "max": 100,
       "decimals": 1
     },
+    "measure_disk_read": {
+      "type": "number",
+      "title": {
+        "en": "Disk read"
+      },
+      "units": {
+        "en": "MB/s"
+      },
+      "getable": true,
+      "setable": false,
+      "uiComponent": "sensor",
+      "min": 0,
+      "decimals": 2
+    },
+    "measure_disk_write": {
+      "type": "number",
+      "title": {
+        "en": "Disk write"
+      },
+      "units": {
+        "en": "MB/s"
+      },
+      "getable": true,
+      "setable": false,
+      "uiComponent": "sensor",
+      "min": 0,
+      "decimals": 2
+    },
     "measure_memory": {
       "type": "number",
       "title": {
@@ -115,6 +146,34 @@
       "min": 0,
       "max": 100,
       "decimals": 1
+    },
+    "measure_network_in": {
+      "type": "number",
+      "title": {
+        "en": "Network in"
+      },
+      "units": {
+        "en": "MB/s"
+      },
+      "getable": true,
+      "setable": false,
+      "uiComponent": "sensor",
+      "min": 0,
+      "decimals": 2
+    },
+    "measure_network_out": {
+      "type": "number",
+      "title": {
+        "en": "Network out"
+      },
+      "units": {
+        "en": "MB/s"
+      },
+      "getable": true,
+      "setable": false,
+      "uiComponent": "sensor",
+      "min": 0,
+      "decimals": 2
     },
     "sensor_uptime": {
       "type": "number",
