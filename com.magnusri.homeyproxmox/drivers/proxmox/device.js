@@ -54,6 +54,44 @@ module.exports = class ProxmoxDevice extends Homey.Device {
   }
 
   /**
+   * Update I/O metrics (network and disk) from status data
+   */
+  async updateIOMetrics(status) {
+    const currentTime = Date.now();
+    const intervalSeconds = (currentTime - this.previousCounters.timestamp) / 1000;
+
+    if (intervalSeconds > 0) {
+      // Network I/O rates
+      if (status.netin !== undefined) {
+        const netInRate = this.calculateRate(status.netin, this.previousCounters.netin, intervalSeconds);
+        await this.setCapabilityValue('measure_network_in', netInRate);
+        this.previousCounters.netin = status.netin;
+      }
+
+      if (status.netout !== undefined) {
+        const netOutRate = this.calculateRate(status.netout, this.previousCounters.netout, intervalSeconds);
+        await this.setCapabilityValue('measure_network_out', netOutRate);
+        this.previousCounters.netout = status.netout;
+      }
+
+      // Disk I/O rates
+      if (status.diskread !== undefined) {
+        const diskReadRate = this.calculateRate(status.diskread, this.previousCounters.diskread, intervalSeconds);
+        await this.setCapabilityValue('measure_disk_read', diskReadRate);
+        this.previousCounters.diskread = status.diskread;
+      }
+
+      if (status.diskwrite !== undefined) {
+        const diskWriteRate = this.calculateRate(status.diskwrite, this.previousCounters.diskwrite, intervalSeconds);
+        await this.setCapabilityValue('measure_disk_write', diskWriteRate);
+        this.previousCounters.diskwrite = status.diskwrite;
+      }
+
+      this.previousCounters.timestamp = currentTime;
+    }
+  }
+
+  /**
    * onInit is called when the device is initialized.
    */
   async onInit() {
@@ -86,6 +124,7 @@ module.exports = class ProxmoxDevice extends Homey.Device {
       'measure_disk_write',
       'alarm_connectivity',
       'alarm_heat',
+      'alarm_generic',
     ];
     if (data.type === 'lxc' || data.type === 'vm' || data.type === 'node') {
       for (const capability of requiredCapabilities) {
@@ -165,39 +204,8 @@ module.exports = class ProxmoxDevice extends Homey.Device {
             await this.setCapabilityValue('sensor_uptime', this.roundToOneDecimal(uptimeHours));
           }
 
-          // Calculate I/O rates (nodes may have these fields)
-          const currentTime = Date.now();
-          const intervalSeconds = (currentTime - this.previousCounters.timestamp) / 1000;
-
-          if (intervalSeconds > 0) {
-            // Network I/O rates
-            if (status.netin !== undefined) {
-              const netInRate = this.calculateRate(status.netin, this.previousCounters.netin, intervalSeconds);
-              await this.setCapabilityValue('measure_network_in', netInRate);
-              this.previousCounters.netin = status.netin;
-            }
-
-            if (status.netout !== undefined) {
-              const netOutRate = this.calculateRate(status.netout, this.previousCounters.netout, intervalSeconds);
-              await this.setCapabilityValue('measure_network_out', netOutRate);
-              this.previousCounters.netout = status.netout;
-            }
-
-            // Disk I/O rates (if available for nodes)
-            if (status.diskread !== undefined) {
-              const diskReadRate = this.calculateRate(status.diskread, this.previousCounters.diskread, intervalSeconds);
-              await this.setCapabilityValue('measure_disk_read', diskReadRate);
-              this.previousCounters.diskread = status.diskread;
-            }
-
-            if (status.diskwrite !== undefined) {
-              const diskWriteRate = this.calculateRate(status.diskwrite, this.previousCounters.diskwrite, intervalSeconds);
-              await this.setCapabilityValue('measure_disk_write', diskWriteRate);
-              this.previousCounters.diskwrite = status.diskwrite;
-            }
-
-            this.previousCounters.timestamp = currentTime;
-          }
+          // Update I/O metrics
+          await this.updateIOMetrics(status);
         } else {
           // Reset I/O rates when offline
           await this.setCapabilityValue('measure_network_in', 0);
@@ -247,39 +255,8 @@ module.exports = class ProxmoxDevice extends Homey.Device {
             await this.setCapabilityValue('sensor_uptime', this.roundToOneDecimal(uptimeHours));
           }
 
-          // Calculate I/O rates
-          const currentTime = Date.now();
-          const intervalSeconds = (currentTime - this.previousCounters.timestamp) / 1000;
-
-          if (intervalSeconds > 0) {
-            // Network I/O rates
-            if (status.netin !== undefined) {
-              const netInRate = this.calculateRate(status.netin, this.previousCounters.netin, intervalSeconds);
-              await this.setCapabilityValue('measure_network_in', netInRate);
-              this.previousCounters.netin = status.netin;
-            }
-
-            if (status.netout !== undefined) {
-              const netOutRate = this.calculateRate(status.netout, this.previousCounters.netout, intervalSeconds);
-              await this.setCapabilityValue('measure_network_out', netOutRate);
-              this.previousCounters.netout = status.netout;
-            }
-
-            // Disk I/O rates
-            if (status.diskread !== undefined) {
-              const diskReadRate = this.calculateRate(status.diskread, this.previousCounters.diskread, intervalSeconds);
-              await this.setCapabilityValue('measure_disk_read', diskReadRate);
-              this.previousCounters.diskread = status.diskread;
-            }
-
-            if (status.diskwrite !== undefined) {
-              const diskWriteRate = this.calculateRate(status.diskwrite, this.previousCounters.diskwrite, intervalSeconds);
-              await this.setCapabilityValue('measure_disk_write', diskWriteRate);
-              this.previousCounters.diskwrite = status.diskwrite;
-            }
-
-            this.previousCounters.timestamp = currentTime;
-          }
+          // Update I/O metrics
+          await this.updateIOMetrics(status);
         } else {
           // When stopped, set metrics to 0
           await this.setCapabilityValue('measure_cpu', 0);
@@ -333,39 +310,8 @@ module.exports = class ProxmoxDevice extends Homey.Device {
             await this.setCapabilityValue('sensor_uptime', this.roundToOneDecimal(uptimeHours));
           }
 
-          // Calculate I/O rates
-          const currentTime = Date.now();
-          const intervalSeconds = (currentTime - this.previousCounters.timestamp) / 1000;
-
-          if (intervalSeconds > 0) {
-            // Network I/O rates
-            if (status.netin !== undefined) {
-              const netInRate = this.calculateRate(status.netin, this.previousCounters.netin, intervalSeconds);
-              await this.setCapabilityValue('measure_network_in', netInRate);
-              this.previousCounters.netin = status.netin;
-            }
-
-            if (status.netout !== undefined) {
-              const netOutRate = this.calculateRate(status.netout, this.previousCounters.netout, intervalSeconds);
-              await this.setCapabilityValue('measure_network_out', netOutRate);
-              this.previousCounters.netout = status.netout;
-            }
-
-            // Disk I/O rates
-            if (status.diskread !== undefined) {
-              const diskReadRate = this.calculateRate(status.diskread, this.previousCounters.diskread, intervalSeconds);
-              await this.setCapabilityValue('measure_disk_read', diskReadRate);
-              this.previousCounters.diskread = status.diskread;
-            }
-
-            if (status.diskwrite !== undefined) {
-              const diskWriteRate = this.calculateRate(status.diskwrite, this.previousCounters.diskwrite, intervalSeconds);
-              await this.setCapabilityValue('measure_disk_write', diskWriteRate);
-              this.previousCounters.diskwrite = status.diskwrite;
-            }
-
-            this.previousCounters.timestamp = currentTime;
-          }
+          // Update I/O metrics
+          await this.updateIOMetrics(status);
         } else {
           // When stopped, set metrics to 0
           await this.setCapabilityValue('measure_cpu', 0);
