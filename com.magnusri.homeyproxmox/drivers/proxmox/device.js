@@ -10,20 +10,22 @@ module.exports = class ProxmoxDevice extends Homey.Device {
    */
   async onInit() {
     this.log('ProxmoxDevice has been initialized');
-    
+
     const data = this.getData();
-    const settings = this.getSettings();
-    
+
     this.log('Device type:', data.type);
     this.log('Device ID:', data.id);
-    
-    // Ensure onoff capability exists for controllable devices
+
+    // Ensure capabilities exist for devices
+    const requiredCapabilities = ['onoff', 'measure_cpu', 'measure_memory', 'measure_disk', 'sensor_uptime'];
     if (data.type === 'lxc' || data.type === 'vm' || data.type === 'node') {
-      if (!this.hasCapability('onoff')) {
-        await this.addCapability('onoff');
+      for (const capability of requiredCapabilities) {
+        if (!this.hasCapability(capability)) {
+          await this.addCapability(capability);
+        }
       }
     }
-    
+
     // Register capability listeners ONLY for LXC and VM (nodes are read-only)
     // Nodes display status but cannot be controlled from Homey
     if (data.type === 'lxc' || data.type === 'vm') {
@@ -32,16 +34,16 @@ module.exports = class ProxmoxDevice extends Homey.Device {
     } else if (data.type === 'node') {
       // Make the capability read-only for nodes
       this.setCapabilityOptions('onoff', {
-        setable: false
+        setable: false,
       }).catch(this.error);
-      this.log(`Node device - onoff is read-only (status display only)`);
+      this.log('Node device - onoff is read-only (status display only)');
     }
-    
+
     // Set up polling for status updates
     this.pollInterval = setInterval(() => {
-      this.updateStatus();
+      this.updateStatus().catch(this.error);
     }, 30000); // Poll every 30 seconds
-    
+
     // Initial status update
     await this.updateStatus();
   }
@@ -53,31 +55,126 @@ module.exports = class ProxmoxDevice extends Homey.Device {
     try {
       const data = this.getData();
       const settings = this.getSettings();
-      
+
       if (data.type === 'node') {
         const status = await ProxmoxAPI.getNodeStatus(
-          settings.host, settings.port, data.node, 
-          settings.tokenID, settings.tokenSecret
+          settings.host, settings.port, data.node,
+          settings.tokenID, settings.tokenSecret,
         );
-        //console.log('Node status:', status);
+        // console.log('Node status:', status);
         const isOnline = status.uptime > 0;
         await this.setCapabilityValue('onoff', isOnline);
+
+        // Update resource metrics
+        if (isOnline) {
+          // CPU usage (cpu is a decimal like 0.14 for 14%)
+          if (status.cpu !== undefined) {
+            await this.setCapabilityValue('measure_cpu', Math.round(status.cpu * 100 * 10) / 10);
+          }
+
+          // Memory usage percentage
+          if (status.memory !== undefined && status.maxmem !== undefined && status.maxmem > 0) {
+            const memPercent = (status.memory / status.maxmem) * 100;
+            await this.setCapabilityValue('measure_memory', Math.round(memPercent * 10) / 10);
+          }
+
+          // Disk usage percentage (rootfs for nodes)
+          if (status.rootfs !== undefined) {
+            const diskUsed = status.rootfs.used || 0;
+            const diskTotal = status.rootfs.total || 1;
+            const diskPercent = (diskUsed / diskTotal) * 100;
+            await this.setCapabilityValue('measure_disk', Math.round(diskPercent * 10) / 10);
+          }
+
+          // Uptime in hours
+          if (status.uptime !== undefined) {
+            const uptimeHours = status.uptime / 3600;
+            await this.setCapabilityValue('sensor_uptime', Math.round(uptimeHours * 10) / 10);
+          }
+        }
+
         this.log(`Node ${data.node} status: ${status.uptime} (${isOnline ? 'ON' : 'OFF'})`);
       } else if (data.type === 'lxc') {
         const status = await ProxmoxAPI.getLXCStatus(
           settings.host, settings.port, data.node, data.vmid,
-          settings.tokenID, settings.tokenSecret
+          settings.tokenID, settings.tokenSecret,
         );
         const isRunning = status.status === 'running';
         await this.setCapabilityValue('onoff', isRunning);
+
+        // Update resource metrics if running
+        if (isRunning) {
+          // CPU usage (cpu is a decimal)
+          if (status.cpu !== undefined) {
+            await this.setCapabilityValue('measure_cpu', Math.round(status.cpu * 100 * 10) / 10);
+          }
+
+          // Memory usage percentage
+          if (status.mem !== undefined && status.maxmem !== undefined && status.maxmem > 0) {
+            const memPercent = (status.mem / status.maxmem) * 100;
+            await this.setCapabilityValue('measure_memory', Math.round(memPercent * 10) / 10);
+          }
+
+          // Disk usage percentage
+          if (status.disk !== undefined && status.maxdisk !== undefined && status.maxdisk > 0) {
+            const diskPercent = (status.disk / status.maxdisk) * 100;
+            await this.setCapabilityValue('measure_disk', Math.round(diskPercent * 10) / 10);
+          }
+
+          // Uptime in hours
+          if (status.uptime !== undefined) {
+            const uptimeHours = status.uptime / 3600;
+            await this.setCapabilityValue('sensor_uptime', Math.round(uptimeHours * 10) / 10);
+          }
+        } else {
+          // When stopped, set metrics to 0
+          await this.setCapabilityValue('measure_cpu', 0);
+          await this.setCapabilityValue('measure_memory', 0);
+          await this.setCapabilityValue('measure_disk', 0);
+          await this.setCapabilityValue('sensor_uptime', 0);
+        }
+
         this.log(`LXC ${data.vmid} status: ${status.status} (${isRunning ? 'ON' : 'OFF'})`);
       } else if (data.type === 'vm') {
         const status = await ProxmoxAPI.getVMStatus(
           settings.host, settings.port, data.node, data.vmid,
-          settings.tokenID, settings.tokenSecret
+          settings.tokenID, settings.tokenSecret,
         );
         const isRunning = status.status === 'running';
         await this.setCapabilityValue('onoff', isRunning);
+
+        // Update resource metrics if running
+        if (isRunning) {
+          // CPU usage (cpu is a decimal)
+          if (status.cpu !== undefined) {
+            await this.setCapabilityValue('measure_cpu', Math.round(status.cpu * 100 * 10) / 10);
+          }
+
+          // Memory usage percentage
+          if (status.mem !== undefined && status.maxmem !== undefined && status.maxmem > 0) {
+            const memPercent = (status.mem / status.maxmem) * 100;
+            await this.setCapabilityValue('measure_memory', Math.round(memPercent * 10) / 10);
+          }
+
+          // Disk usage percentage
+          if (status.disk !== undefined && status.maxdisk !== undefined && status.maxdisk > 0) {
+            const diskPercent = (status.disk / status.maxdisk) * 100;
+            await this.setCapabilityValue('measure_disk', Math.round(diskPercent * 10) / 10);
+          }
+
+          // Uptime in hours
+          if (status.uptime !== undefined) {
+            const uptimeHours = status.uptime / 3600;
+            await this.setCapabilityValue('sensor_uptime', Math.round(uptimeHours * 10) / 10);
+          }
+        } else {
+          // When stopped, set metrics to 0
+          await this.setCapabilityValue('measure_cpu', 0);
+          await this.setCapabilityValue('measure_memory', 0);
+          await this.setCapabilityValue('measure_disk', 0);
+          await this.setCapabilityValue('sensor_uptime', 0);
+        }
+
         this.log(`VM ${data.vmid} status: ${status.status} (${isRunning ? 'ON' : 'OFF'})`);
       }
     } catch (error) {
@@ -91,23 +188,23 @@ module.exports = class ProxmoxDevice extends Homey.Device {
   async onCapabilityOnoff(value) {
     const data = this.getData();
     const settings = this.getSettings();
-    
+
     this.log(`${data.type} ${data.id}: Changing power state to ${value ? 'ON' : 'OFF'}`);
-    
+
     try {
       if (data.type === 'lxc') {
         if (value) {
           this.log(`Starting LXC ${data.vmid} on node ${data.node}`);
           await ProxmoxAPI.startLXC(
             settings.host, settings.port, data.node, data.vmid,
-            settings.tokenID, settings.tokenSecret
+            settings.tokenID, settings.tokenSecret,
           );
           this.log(`LXC ${data.vmid} start command sent successfully`);
         } else {
           this.log(`Stopping LXC ${data.vmid} on node ${data.node}`);
           await ProxmoxAPI.stopLXC(
             settings.host, settings.port, data.node, data.vmid,
-            settings.tokenID, settings.tokenSecret
+            settings.tokenID, settings.tokenSecret,
           );
           this.log(`LXC ${data.vmid} stop command sent successfully`);
         }
@@ -116,25 +213,25 @@ module.exports = class ProxmoxDevice extends Homey.Device {
           this.log(`Starting VM ${data.vmid} on node ${data.node}`);
           await ProxmoxAPI.startVM(
             settings.host, settings.port, data.node, data.vmid,
-            settings.tokenID, settings.tokenSecret
+            settings.tokenID, settings.tokenSecret,
           );
           this.log(`VM ${data.vmid} start command sent successfully`);
         } else {
           this.log(`Stopping VM ${data.vmid} on node ${data.node}`);
           await ProxmoxAPI.stopVM(
             settings.host, settings.port, data.node, data.vmid,
-            settings.tokenID, settings.tokenSecret
+            settings.tokenID, settings.tokenSecret,
           );
           this.log(`VM ${data.vmid} stop command sent successfully`);
         }
       }
-      
+
       // Update status after a short delay to reflect the change
       setTimeout(() => {
         this.log('Updating status after power state change');
-        this.updateStatus();
+        this.updateStatus().catch(this.error);
       }, 3000);
-      
+
       return true;
     } catch (error) {
       this.error('Failed to change power state:', error.message);
@@ -159,7 +256,7 @@ module.exports = class ProxmoxDevice extends Homey.Device {
    */
   async onSettings({ oldSettings, newSettings, changedKeys }) {
     this.log('ProxmoxDevice settings where changed');
-    
+
     // Re-fetch status with new settings
     await this.updateStatus();
   }
@@ -178,7 +275,7 @@ module.exports = class ProxmoxDevice extends Homey.Device {
    */
   async onDeleted() {
     this.log('ProxmoxDevice has been deleted');
-    
+
     // Clear polling interval
     if (this.pollInterval) {
       clearInterval(this.pollInterval);

@@ -4,11 +4,15 @@
   },
   "class": "service",
   "capabilities": [
+    "onoff",
+    "measure_cpu",
+    "measure_memory",
+    "measure_disk",
+    "sensor_uptime",
     "alarm_connectivity",
     "alarm_generic",
     "alarm_heat",
-    "alarm_lost",
-    "onoff"
+    "alarm_lost"
   ],
   "platforms": [
     "local"

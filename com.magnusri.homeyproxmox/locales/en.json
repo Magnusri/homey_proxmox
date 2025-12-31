@@ -1,1 +1,16 @@
-{}
+{
+  "capabilities": {
+    "measure_cpu": {
+      "title": "CPU usage"
+    },
+    "measure_memory": {
+      "title": "Memory usage"
+    },
+    "measure_disk": {
+      "title": "Disk usage"
+    },
+    "sensor_uptime": {
+      "title": "Uptime"
+    }
+  }
+}

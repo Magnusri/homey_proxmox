@@ -30,11 +30,15 @@
       },
       "class": "service",
       "capabilities": [
+        "onoff",
+        "measure_cpu",
+        "measure_memory",
+        "measure_disk",
+        "sensor_uptime",
         "alarm_connectivity",
         "alarm_generic",
         "alarm_heat",
-        "alarm_lost",
-        "onoff"
+        "alarm_lost"
       ],
       "platforms": [
         "local"
@@ -65,5 +69,66 @@
       },
       "id": "proxmox"
     }
-  ]
+  ],
+  "capabilities": {
+    "measure_cpu": {
+      "type": "number",
+      "title": {
+        "en": "CPU usage"
+      },
+      "units": {
+        "en": "%"
+      },
+      "getable": true,
+      "setable": false,
+      "uiComponent": "sensor",
+      "min": 0,
+      "max": 100,
+      "decimals": 1
+    },
+    "measure_disk": {
+      "type": "number",
+      "title": {
+        "en": "Disk usage"
+      },
+      "units": {
+        "en": "%"
+      },
+      "getable": true,
+      "setable": false,
+      "uiComponent": "sensor",
+      "min": 0,
+      "max": 100,
+      "decimals": 1
+    },
+    "measure_memory": {
+      "type": "number",
+      "title": {
+        "en": "Memory usage"
+      },
+      "units": {
+        "en": "%"
+      },
+      "getable": true,
+      "setable": false,
+      "uiComponent": "sensor",
+      "min": 0,
+      "max": 100,
+      "decimals": 1
+    },
+    "sensor_uptime": {
+      "type": "number",
+      "title": {
+        "en": "Uptime"
+      },
+      "units": {
+        "en": "hours"
+      },
+      "getable": true,
+      "setable": false,
+      "uiComponent": "sensor",
+      "min": 0,
+      "decimals": 1
+    }
+  }
 }

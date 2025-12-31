@@ -1,11 +1,12 @@
 'use strict';
+
 const https = require('https');
 
 /**
  * Shared Proxmox API utility
  */
 class ProxmoxAPI {
-  
+
   /**
    * Make an API request to Proxmox
    */
@@ -15,9 +16,9 @@ class ProxmoxAPI {
         hostname: host,
         port: port || 8006,
         path: `/api2/json${endpoint}`,
-        method: method,
+        method,
         headers: {
-          'Authorization': `PVEAPIToken=${tokenID}=${tokenSecret}`,
+          Authorization: `PVEAPIToken=${tokenID}=${tokenSecret}`,
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         rejectUnauthorized: false, // Accept self-signed certificates
@@ -68,77 +69,77 @@ class ProxmoxAPI {
    * Get all nodes
    */
   static async getNodes(host, port, tokenID, tokenSecret) {
-    return await this.request(host, port, '/nodes', tokenID, tokenSecret);
+    return this.request(host, port, '/nodes', tokenID, tokenSecret);
   }
 
   /**
    * Get LXC containers for a node
    */
   static async getLXCs(host, port, node, tokenID, tokenSecret) {
-    return await this.request(host, port, `/nodes/${node}/lxc`, tokenID, tokenSecret);
+    return this.request(host, port, `/nodes/${node}/lxc`, tokenID, tokenSecret);
   }
 
   /**
    * Get VMs for a node
    */
   static async getVMs(host, port, node, tokenID, tokenSecret) {
-    return await this.request(host, port, `/nodes/${node}/qemu`, tokenID, tokenSecret);
+    return this.request(host, port, `/nodes/${node}/qemu`, tokenID, tokenSecret);
   }
 
   /**
    * Get all storage
    */
   static async getStorage(host, port, tokenID, tokenSecret) {
-    return await this.request(host, port, '/storage', tokenID, tokenSecret);
+    return this.request(host, port, '/storage', tokenID, tokenSecret);
   }
 
   /**
    * Get node status
    */
   static async getNodeStatus(host, port, node, tokenID, tokenSecret) {
-    return await this.request(host, port, `/nodes/${node}/status`, tokenID, tokenSecret);
+    return this.request(host, port, `/nodes/${node}/status`, tokenID, tokenSecret);
   }
 
   /**
    * Get LXC status
    */
   static async getLXCStatus(host, port, node, vmid, tokenID, tokenSecret) {
-    return await this.request(host, port, `/nodes/${node}/lxc/${vmid}/status/current`, tokenID, tokenSecret);
+    return this.request(host, port, `/nodes/${node}/lxc/${vmid}/status/current`, tokenID, tokenSecret);
   }
 
   /**
    * Get VM status
    */
   static async getVMStatus(host, port, node, vmid, tokenID, tokenSecret) {
-    return await this.request(host, port, `/nodes/${node}/qemu/${vmid}/status/current`, tokenID, tokenSecret);
+    return this.request(host, port, `/nodes/${node}/qemu/${vmid}/status/current`, tokenID, tokenSecret);
   }
 
   /**
    * Start LXC container
    */
   static async startLXC(host, port, node, vmid, tokenID, tokenSecret) {
-    return await this.request(host, port, `/nodes/${node}/lxc/${vmid}/status/start`, tokenID, tokenSecret, 'POST');
+    return this.request(host, port, `/nodes/${node}/lxc/${vmid}/status/start`, tokenID, tokenSecret, 'POST');
   }
 
   /**
    * Stop LXC container
    */
   static async stopLXC(host, port, node, vmid, tokenID, tokenSecret) {
-    return await this.request(host, port, `/nodes/${node}/lxc/${vmid}/status/stop`, tokenID, tokenSecret, 'POST');
+    return this.request(host, port, `/nodes/${node}/lxc/${vmid}/status/stop`, tokenID, tokenSecret, 'POST');
   }
 
   /**
    * Start VM
    */
   static async startVM(host, port, node, vmid, tokenID, tokenSecret) {
-    return await this.request(host, port, `/nodes/${node}/qemu/${vmid}/status/start`, tokenID, tokenSecret, 'POST');
+    return this.request(host, port, `/nodes/${node}/qemu/${vmid}/status/start`, tokenID, tokenSecret, 'POST');
   }
 
   /**
    * Stop VM
    */
   static async stopVM(host, port, node, vmid, tokenID, tokenSecret) {
-    return await this.request(host, port, `/nodes/${node}/qemu/${vmid}/status/stop`, tokenID, tokenSecret, 'POST');
+    return this.request(host, port, `/nodes/${node}/qemu/${vmid}/status/stop`, tokenID, tokenSecret, 'POST');
   }
 }
 
