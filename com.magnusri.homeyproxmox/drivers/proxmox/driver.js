@@ -19,34 +19,67 @@ module.exports = class ProxmoxDriver extends Homey.Driver {
     this.highNetworkTrafficTrigger = this.homey.flow.getDeviceTriggerCard('high_network_traffic');
     this.highDiskIOTrigger = this.homey.flow.getDeviceTriggerCard('high_disk_io');
 
+    // Register run listeners for triggers with arguments
+    this.cpuAboveThresholdTrigger.registerRunListener(async (args, state) => {
+      // Check if actual CPU usage is above the user-specified threshold
+      return state.cpu_usage > args.threshold;
+    });
+
+    this.memoryAboveThresholdTrigger.registerRunListener(async (args, state) => {
+      // Check if actual memory usage is above the user-specified threshold
+      return state.memory_usage > args.threshold;
+    });
+
+    this.highNetworkTrafficTrigger.registerRunListener(async (args, state) => {
+      // Check if total network traffic is above the user-specified threshold
+      const totalTraffic = state.network_in + state.network_out;
+      return totalTraffic > args.threshold;
+    });
+
+    this.highDiskIOTrigger.registerRunListener(async (args, state) => {
+      // Check if total disk I/O is above the user-specified threshold
+      const totalIO = state.disk_read + state.disk_write;
+      return totalIO > args.threshold;
+    });
+
     // Register flow card conditions
     this.homey.flow.getConditionCard('is_running')
       .registerRunListener(async (args) => {
-        return args.device.getCapabilityValue('onoff') === true;
+        const onoffValue = args.device.getCapabilityValue('onoff');
+        return onoffValue === true;
       });
 
     this.homey.flow.getConditionCard('cpu_above')
       .registerRunListener(async (args) => {
         const cpuUsage = args.device.getCapabilityValue('measure_cpu');
+        if (cpuUsage === null || cpuUsage === undefined) {
+          return false;
+        }
         return cpuUsage > args.threshold;
       });
 
     this.homey.flow.getConditionCard('memory_above')
       .registerRunListener(async (args) => {
         const memUsage = args.device.getCapabilityValue('measure_memory');
+        if (memUsage === null || memUsage === undefined) {
+          return false;
+        }
         return memUsage > args.threshold;
       });
 
     this.homey.flow.getConditionCard('uptime_greater')
       .registerRunListener(async (args) => {
         const uptime = args.device.getCapabilityValue('sensor_uptime');
+        if (uptime === null || uptime === undefined) {
+          return false;
+        }
         return uptime > args.hours;
       });
 
     this.homey.flow.getConditionCard('network_above')
       .registerRunListener(async (args) => {
-        const netIn = args.device.getCapabilityValue('measure_network_in');
-        const netOut = args.device.getCapabilityValue('measure_network_out');
+        const netIn = args.device.getCapabilityValue('measure_network_in') || 0;
+        const netOut = args.device.getCapabilityValue('measure_network_out') || 0;
         const totalTraffic = netIn + netOut;
         return totalTraffic > args.threshold;
       });
@@ -54,16 +87,31 @@ module.exports = class ProxmoxDriver extends Homey.Driver {
     // Register flow card actions
     this.homey.flow.getActionCard('start_vm')
       .registerRunListener(async (args) => {
+        const data = args.device.getData();
+        // Only allow start/stop for VMs and LXCs, not nodes or storage
+        if (data.type !== 'vm' && data.type !== 'lxc') {
+          throw new Error('This device cannot be started');
+        }
         await args.device.setCapabilityValue('onoff', true);
       });
 
     this.homey.flow.getActionCard('stop_vm')
       .registerRunListener(async (args) => {
+        const data = args.device.getData();
+        // Only allow start/stop for VMs and LXCs, not nodes or storage
+        if (data.type !== 'vm' && data.type !== 'lxc') {
+          throw new Error('This device cannot be stopped');
+        }
         await args.device.setCapabilityValue('onoff', false);
       });
 
     this.homey.flow.getActionCard('restart_vm')
       .registerRunListener(async (args) => {
+        const data = args.device.getData();
+        // Only allow start/stop for VMs and LXCs, not nodes or storage
+        if (data.type !== 'vm' && data.type !== 'lxc') {
+          throw new Error('This device cannot be restarted');
+        }
         // Stop then start
         await args.device.setCapabilityValue('onoff', false);
         // Wait a bit before starting

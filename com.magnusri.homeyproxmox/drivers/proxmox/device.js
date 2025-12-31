@@ -64,26 +64,34 @@ module.exports = class ProxmoxDevice extends Homey.Device {
       // Network I/O rates
       if (status.netin !== undefined) {
         const netInRate = this.calculateRate(status.netin, this.previousCounters.netin, intervalSeconds);
-        await this.setCapabilityValue('measure_network_in', netInRate);
+        if (this.hasCapability('measure_network_in')) {
+          await this.setCapabilityValue('measure_network_in', netInRate);
+        }
         this.previousCounters.netin = status.netin;
       }
 
       if (status.netout !== undefined) {
         const netOutRate = this.calculateRate(status.netout, this.previousCounters.netout, intervalSeconds);
-        await this.setCapabilityValue('measure_network_out', netOutRate);
+        if (this.hasCapability('measure_network_out')) {
+          await this.setCapabilityValue('measure_network_out', netOutRate);
+        }
         this.previousCounters.netout = status.netout;
       }
 
       // Disk I/O rates
       if (status.diskread !== undefined) {
         const diskReadRate = this.calculateRate(status.diskread, this.previousCounters.diskread, intervalSeconds);
-        await this.setCapabilityValue('measure_disk_read', diskReadRate);
+        if (this.hasCapability('measure_disk_read')) {
+          await this.setCapabilityValue('measure_disk_read', diskReadRate);
+        }
         this.previousCounters.diskread = status.diskread;
       }
 
       if (status.diskwrite !== undefined) {
         const diskWriteRate = this.calculateRate(status.diskwrite, this.previousCounters.diskwrite, intervalSeconds);
-        await this.setCapabilityValue('measure_disk_write', diskWriteRate);
+        if (this.hasCapability('measure_disk_write')) {
+          await this.setCapabilityValue('measure_disk_write', diskWriteRate);
+        }
         this.previousCounters.diskwrite = status.diskwrite;
       }
 
@@ -95,11 +103,16 @@ module.exports = class ProxmoxDevice extends Homey.Device {
    * Check metrics and trigger flow cards when thresholds are crossed
    */
   async checkAndTriggerFlowCards(isRunning, cpuPercent, memPercent) {
+    // Skip if driver or triggers are not available
+    if (!this.driver) {
+      return;
+    }
+
     // Trigger VM started/stopped
     if (this.previousState.isRunning !== null && this.previousState.isRunning !== isRunning) {
-      if (isRunning) {
+      if (isRunning && this.driver.vmStartedTrigger) {
         this.driver.vmStartedTrigger.trigger(this).catch(this.error);
-      } else {
+      } else if (!isRunning && this.driver.vmStoppedTrigger) {
         this.driver.vmStoppedTrigger.trigger(this).catch(this.error);
       }
     }
@@ -108,7 +121,9 @@ module.exports = class ProxmoxDevice extends Homey.Device {
     // Trigger CPU threshold (only when crossing threshold, not continuously)
     if (cpuPercent > 90 && !this.thresholdTracking.cpu.above) {
       this.thresholdTracking.cpu.above = true;
-      this.driver.cpuAboveThresholdTrigger.trigger(this, { cpu_usage: cpuPercent }).catch(this.error);
+      if (this.driver.cpuAboveThresholdTrigger) {
+        this.driver.cpuAboveThresholdTrigger.trigger(this, { cpu_usage: cpuPercent }).catch(this.error);
+      }
     } else if (cpuPercent <= 85) {
       // Reset when below 85% to add hysteresis
       this.thresholdTracking.cpu.above = false;
@@ -117,7 +132,9 @@ module.exports = class ProxmoxDevice extends Homey.Device {
     // Trigger memory threshold
     if (memPercent > 90 && !this.thresholdTracking.memory.above) {
       this.thresholdTracking.memory.above = true;
-      this.driver.memoryAboveThresholdTrigger.trigger(this, { memory_usage: memPercent }).catch(this.error);
+      if (this.driver.memoryAboveThresholdTrigger) {
+        this.driver.memoryAboveThresholdTrigger.trigger(this, { memory_usage: memPercent }).catch(this.error);
+      }
     } else if (memPercent <= 85) {
       this.thresholdTracking.memory.above = false;
     }
@@ -129,10 +146,12 @@ module.exports = class ProxmoxDevice extends Homey.Device {
 
     if (totalNetwork > 10 && !this.thresholdTracking.network.above) {
       this.thresholdTracking.network.above = true;
-      this.driver.highNetworkTrafficTrigger.trigger(this, {
-        network_in: netIn,
-        network_out: netOut,
-      }).catch(this.error);
+      if (this.driver.highNetworkTrafficTrigger) {
+        this.driver.highNetworkTrafficTrigger.trigger(this, {
+          network_in: netIn,
+          network_out: netOut,
+        }).catch(this.error);
+      }
     } else if (totalNetwork <= 8) {
       this.thresholdTracking.network.above = false;
     }
@@ -144,10 +163,12 @@ module.exports = class ProxmoxDevice extends Homey.Device {
 
     if (totalDiskIO > 50 && !this.thresholdTracking.diskIO.above) {
       this.thresholdTracking.diskIO.above = true;
-      this.driver.highDiskIOTrigger.trigger(this, {
-        disk_read: diskRead,
-        disk_write: diskWrite,
-      }).catch(this.error);
+      if (this.driver.highDiskIOTrigger) {
+        this.driver.highDiskIOTrigger.trigger(this, {
+          disk_read: diskRead,
+          disk_write: diskWrite,
+        }).catch(this.error);
+      }
     } else if (totalDiskIO <= 40) {
       this.thresholdTracking.diskIO.above = false;
     }
