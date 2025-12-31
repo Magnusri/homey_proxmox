@@ -1,0 +1,42 @@
+{
+  "title": {
+    "en": "High network traffic detected"
+  },
+  "titleFormatted": {
+    "en": "network traffic above [[threshold]] MB/s"
+  },
+  "args": [
+    {
+      "type": "device",
+      "name": "device",
+      "filter": "driver_id=proxmox"
+    },
+    {
+      "type": "number",
+      "name": "threshold",
+      "min": 0,
+      "step": 0.1,
+      "placeholder": {
+        "en": "10"
+      }
+    }
+  ],
+  "tokens": [
+    {
+      "name": "network_in",
+      "type": "number",
+      "title": {
+        "en": "Network in"
+      },
+      "example": 12.5
+    },
+    {
+      "name": "network_out",
+      "type": "number",
+      "title": {
+        "en": "Network out"
+      },
+      "example": 8.3
+    }
+  ]
+}

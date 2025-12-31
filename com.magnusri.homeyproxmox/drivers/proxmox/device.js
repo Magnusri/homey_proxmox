@@ -92,6 +92,68 @@ module.exports = class ProxmoxDevice extends Homey.Device {
   }
 
   /**
+   * Check metrics and trigger flow cards when thresholds are crossed
+   */
+  async checkAndTriggerFlowCards(isRunning, cpuPercent, memPercent) {
+    // Trigger VM started/stopped
+    if (this.previousState.isRunning !== null && this.previousState.isRunning !== isRunning) {
+      if (isRunning) {
+        this.driver.vmStartedTrigger.trigger(this).catch(this.error);
+      } else {
+        this.driver.vmStoppedTrigger.trigger(this).catch(this.error);
+      }
+    }
+    this.previousState.isRunning = isRunning;
+
+    // Trigger CPU threshold (only when crossing threshold, not continuously)
+    if (cpuPercent > 90 && !this.thresholdTracking.cpu.above) {
+      this.thresholdTracking.cpu.above = true;
+      this.driver.cpuAboveThresholdTrigger.trigger(this, { cpu_usage: cpuPercent }).catch(this.error);
+    } else if (cpuPercent <= 85) {
+      // Reset when below 85% to add hysteresis
+      this.thresholdTracking.cpu.above = false;
+    }
+
+    // Trigger memory threshold
+    if (memPercent > 90 && !this.thresholdTracking.memory.above) {
+      this.thresholdTracking.memory.above = true;
+      this.driver.memoryAboveThresholdTrigger.trigger(this, { memory_usage: memPercent }).catch(this.error);
+    } else if (memPercent <= 85) {
+      this.thresholdTracking.memory.above = false;
+    }
+
+    // Trigger network traffic threshold
+    const netIn = this.getCapabilityValue('measure_network_in') || 0;
+    const netOut = this.getCapabilityValue('measure_network_out') || 0;
+    const totalNetwork = netIn + netOut;
+
+    if (totalNetwork > 10 && !this.thresholdTracking.network.above) {
+      this.thresholdTracking.network.above = true;
+      this.driver.highNetworkTrafficTrigger.trigger(this, {
+        network_in: netIn,
+        network_out: netOut,
+      }).catch(this.error);
+    } else if (totalNetwork <= 8) {
+      this.thresholdTracking.network.above = false;
+    }
+
+    // Trigger disk I/O threshold
+    const diskRead = this.getCapabilityValue('measure_disk_read') || 0;
+    const diskWrite = this.getCapabilityValue('measure_disk_write') || 0;
+    const totalDiskIO = diskRead + diskWrite;
+
+    if (totalDiskIO > 50 && !this.thresholdTracking.diskIO.above) {
+      this.thresholdTracking.diskIO.above = true;
+      this.driver.highDiskIOTrigger.trigger(this, {
+        disk_read: diskRead,
+        disk_write: diskWrite,
+      }).catch(this.error);
+    } else if (totalDiskIO <= 40) {
+      this.thresholdTracking.diskIO.above = false;
+    }
+  }
+
+  /**
    * onInit is called when the device is initialized.
    */
   async onInit() {
@@ -109,6 +171,23 @@ module.exports = class ProxmoxDevice extends Homey.Device {
       diskread: null,
       diskwrite: null,
       timestamp: Date.now(),
+    };
+
+    // Initialize previous state for detecting changes
+    this.previousState = {
+      isRunning: null,
+      cpuPercent: 0,
+      memPercent: 0,
+      networkTotal: 0,
+      diskIOTotal: 0,
+    };
+
+    // Initialize threshold tracking for triggers
+    this.thresholdTracking = {
+      cpu: { above: false, threshold: 90 },
+      memory: { above: false, threshold: 90 },
+      network: { above: false, threshold: 10 },
+      diskIO: { above: false, threshold: 50 },
     };
 
     // Ensure capabilities exist for devices
@@ -217,6 +296,9 @@ module.exports = class ProxmoxDevice extends Homey.Device {
         // Update alarms
         await this.updateAlarms(cpuPercent, memPercent, isOnline);
 
+        // Check and trigger flow cards
+        await this.checkAndTriggerFlowCards(isOnline, cpuPercent, memPercent);
+
         this.log(`Node ${data.node} status: ${status.uptime} (${isOnline ? 'ON' : 'OFF'})`);
       } else if (data.type === 'lxc') {
         const status = await ProxmoxAPI.getLXCStatus(
@@ -271,6 +353,9 @@ module.exports = class ProxmoxDevice extends Homey.Device {
 
         // Update alarms
         await this.updateAlarms(cpuPercent, memPercent, isRunning);
+
+        // Check and trigger flow cards
+        await this.checkAndTriggerFlowCards(isRunning, cpuPercent, memPercent);
 
         this.log(`LXC ${data.vmid} status: ${status.status} (${isRunning ? 'ON' : 'OFF'})`);
       } else if (data.type === 'vm') {
@@ -327,6 +412,9 @@ module.exports = class ProxmoxDevice extends Homey.Device {
         // Update alarms
         await this.updateAlarms(cpuPercent, memPercent, isRunning);
 
+        // Check and trigger flow cards
+        await this.checkAndTriggerFlowCards(isRunning, cpuPercent, memPercent);
+
         this.log(`VM ${data.vmid} status: ${status.status} (${isRunning ? 'ON' : 'OFF'})`);
       }
     } catch (error) {
@@ -338,6 +426,10 @@ module.exports = class ProxmoxDevice extends Homey.Device {
       // Trigger alarm_connectivity on error (likely connection issue)
       if (this.hasCapability('alarm_connectivity')) {
         await this.setCapabilityValue('alarm_connectivity', true).catch(this.error);
+      }
+      // Trigger unreachable flow card
+      if (this.driver && this.driver.deviceUnreachableTrigger) {
+        this.driver.deviceUnreachableTrigger.trigger(this).catch(this.error);
       }
     }
   }

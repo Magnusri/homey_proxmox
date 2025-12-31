@@ -9,6 +9,67 @@ module.exports = class ProxmoxDriver extends Homey.Driver {
    */
   async onInit() {
     this.log('ProxmoxDriver has been initialized');
+
+    // Register flow card triggers
+    this.vmStartedTrigger = this.homey.flow.getDeviceTriggerCard('vm_started');
+    this.vmStoppedTrigger = this.homey.flow.getDeviceTriggerCard('vm_stopped');
+    this.cpuAboveThresholdTrigger = this.homey.flow.getDeviceTriggerCard('cpu_above_threshold');
+    this.memoryAboveThresholdTrigger = this.homey.flow.getDeviceTriggerCard('memory_above_threshold');
+    this.deviceUnreachableTrigger = this.homey.flow.getDeviceTriggerCard('device_unreachable');
+    this.highNetworkTrafficTrigger = this.homey.flow.getDeviceTriggerCard('high_network_traffic');
+    this.highDiskIOTrigger = this.homey.flow.getDeviceTriggerCard('high_disk_io');
+
+    // Register flow card conditions
+    this.homey.flow.getConditionCard('is_running')
+      .registerRunListener(async (args) => {
+        return args.device.getCapabilityValue('onoff') === true;
+      });
+
+    this.homey.flow.getConditionCard('cpu_above')
+      .registerRunListener(async (args) => {
+        const cpuUsage = args.device.getCapabilityValue('measure_cpu');
+        return cpuUsage > args.threshold;
+      });
+
+    this.homey.flow.getConditionCard('memory_above')
+      .registerRunListener(async (args) => {
+        const memUsage = args.device.getCapabilityValue('measure_memory');
+        return memUsage > args.threshold;
+      });
+
+    this.homey.flow.getConditionCard('uptime_greater')
+      .registerRunListener(async (args) => {
+        const uptime = args.device.getCapabilityValue('sensor_uptime');
+        return uptime > args.hours;
+      });
+
+    this.homey.flow.getConditionCard('network_above')
+      .registerRunListener(async (args) => {
+        const netIn = args.device.getCapabilityValue('measure_network_in');
+        const netOut = args.device.getCapabilityValue('measure_network_out');
+        const totalTraffic = netIn + netOut;
+        return totalTraffic > args.threshold;
+      });
+
+    // Register flow card actions
+    this.homey.flow.getActionCard('start_vm')
+      .registerRunListener(async (args) => {
+        await args.device.setCapabilityValue('onoff', true);
+      });
+
+    this.homey.flow.getActionCard('stop_vm')
+      .registerRunListener(async (args) => {
+        await args.device.setCapabilityValue('onoff', false);
+      });
+
+    this.homey.flow.getActionCard('restart_vm')
+      .registerRunListener(async (args) => {
+        // Stop then start
+        await args.device.setCapabilityValue('onoff', false);
+        // Wait a bit before starting
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+        await args.device.setCapabilityValue('onoff', true);
+      });
   }
 
   async onPair(session) {

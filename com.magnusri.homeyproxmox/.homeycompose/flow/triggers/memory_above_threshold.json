@@ -1,0 +1,35 @@
+{
+  "title": {
+    "en": "Memory usage above threshold"
+  },
+  "titleFormatted": {
+    "en": "memory usage above [[threshold]]%"
+  },
+  "args": [
+    {
+      "type": "device",
+      "name": "device",
+      "filter": "driver_id=proxmox"
+    },
+    {
+      "type": "number",
+      "name": "threshold",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "placeholder": {
+        "en": "90"
+      }
+    }
+  ],
+  "tokens": [
+    {
+      "name": "memory_usage",
+      "type": "number",
+      "title": {
+        "en": "Memory usage"
+      },
+      "example": 78.3
+    }
+  ]
+}

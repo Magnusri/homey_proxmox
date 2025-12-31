@@ -1,0 +1,15 @@
+{
+  "title": {
+    "en": "Device becomes unreachable"
+  },
+  "titleFormatted": {
+    "en": "becomes unreachable"
+  },
+  "args": [
+    {
+      "type": "device",
+      "name": "device",
+      "filter": "driver_id=proxmox"
+    }
+  ]
+}
