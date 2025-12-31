@@ -6,6 +6,13 @@ const ProxmoxAPI = require('../../lib/proxmox-api');
 module.exports = class ProxmoxDevice extends Homey.Device {
 
   /**
+   * Helper function to round a number to 1 decimal place
+   */
+  roundToOneDecimal(value) {
+    return Math.round(value * 10) / 10;
+  }
+
+  /**
    * onInit is called when the device is initialized.
    */
   async onInit() {
@@ -69,13 +76,13 @@ module.exports = class ProxmoxDevice extends Homey.Device {
         if (isOnline) {
           // CPU usage (cpu is a decimal like 0.14 for 14%)
           if (status.cpu !== undefined) {
-            await this.setCapabilityValue('measure_cpu', Math.round(status.cpu * 100 * 10) / 10);
+            await this.setCapabilityValue('measure_cpu', this.roundToOneDecimal(status.cpu * 100));
           }
 
           // Memory usage percentage
           if (status.memory !== undefined && status.maxmem !== undefined && status.maxmem > 0) {
             const memPercent = (status.memory / status.maxmem) * 100;
-            await this.setCapabilityValue('measure_memory', Math.round(memPercent * 10) / 10);
+            await this.setCapabilityValue('measure_memory', this.roundToOneDecimal(memPercent));
           }
 
           // Disk usage percentage (rootfs for nodes)
@@ -83,13 +90,13 @@ module.exports = class ProxmoxDevice extends Homey.Device {
             const diskUsed = status.rootfs.used || 0;
             const diskTotal = status.rootfs.total || 1;
             const diskPercent = (diskUsed / diskTotal) * 100;
-            await this.setCapabilityValue('measure_disk', Math.round(diskPercent * 10) / 10);
+            await this.setCapabilityValue('measure_disk', this.roundToOneDecimal(diskPercent));
           }
 
           // Uptime in hours
           if (status.uptime !== undefined) {
             const uptimeHours = status.uptime / 3600;
-            await this.setCapabilityValue('sensor_uptime', Math.round(uptimeHours * 10) / 10);
+            await this.setCapabilityValue('sensor_uptime', this.roundToOneDecimal(uptimeHours));
           }
         }
 
@@ -106,25 +113,25 @@ module.exports = class ProxmoxDevice extends Homey.Device {
         if (isRunning) {
           // CPU usage (cpu is a decimal)
           if (status.cpu !== undefined) {
-            await this.setCapabilityValue('measure_cpu', Math.round(status.cpu * 100 * 10) / 10);
+            await this.setCapabilityValue('measure_cpu', this.roundToOneDecimal(status.cpu * 100));
           }
 
           // Memory usage percentage
           if (status.mem !== undefined && status.maxmem !== undefined && status.maxmem > 0) {
             const memPercent = (status.mem / status.maxmem) * 100;
-            await this.setCapabilityValue('measure_memory', Math.round(memPercent * 10) / 10);
+            await this.setCapabilityValue('measure_memory', this.roundToOneDecimal(memPercent));
           }
 
           // Disk usage percentage
           if (status.disk !== undefined && status.maxdisk !== undefined && status.maxdisk > 0) {
             const diskPercent = (status.disk / status.maxdisk) * 100;
-            await this.setCapabilityValue('measure_disk', Math.round(diskPercent * 10) / 10);
+            await this.setCapabilityValue('measure_disk', this.roundToOneDecimal(diskPercent));
           }
 
           // Uptime in hours
           if (status.uptime !== undefined) {
             const uptimeHours = status.uptime / 3600;
-            await this.setCapabilityValue('sensor_uptime', Math.round(uptimeHours * 10) / 10);
+            await this.setCapabilityValue('sensor_uptime', this.roundToOneDecimal(uptimeHours));
           }
         } else {
           // When stopped, set metrics to 0
@@ -147,25 +154,25 @@ module.exports = class ProxmoxDevice extends Homey.Device {
         if (isRunning) {
           // CPU usage (cpu is a decimal)
           if (status.cpu !== undefined) {
-            await this.setCapabilityValue('measure_cpu', Math.round(status.cpu * 100 * 10) / 10);
+            await this.setCapabilityValue('measure_cpu', this.roundToOneDecimal(status.cpu * 100));
           }
 
           // Memory usage percentage
           if (status.mem !== undefined && status.maxmem !== undefined && status.maxmem > 0) {
             const memPercent = (status.mem / status.maxmem) * 100;
-            await this.setCapabilityValue('measure_memory', Math.round(memPercent * 10) / 10);
+            await this.setCapabilityValue('measure_memory', this.roundToOneDecimal(memPercent));
           }
 
           // Disk usage percentage
           if (status.disk !== undefined && status.maxdisk !== undefined && status.maxdisk > 0) {
             const diskPercent = (status.disk / status.maxdisk) * 100;
-            await this.setCapabilityValue('measure_disk', Math.round(diskPercent * 10) / 10);
+            await this.setCapabilityValue('measure_disk', this.roundToOneDecimal(diskPercent));
           }
 
           // Uptime in hours
           if (status.uptime !== undefined) {
             const uptimeHours = status.uptime / 3600;
-            await this.setCapabilityValue('sensor_uptime', Math.round(uptimeHours * 10) / 10);
+            await this.setCapabilityValue('sensor_uptime', this.roundToOneDecimal(uptimeHours));
           }
         } else {
           // When stopped, set metrics to 0
