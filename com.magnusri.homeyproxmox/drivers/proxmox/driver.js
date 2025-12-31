@@ -18,6 +18,7 @@ module.exports = class ProxmoxDriver extends Homey.Driver {
     this.deviceUnreachableTrigger = this.homey.flow.getDeviceTriggerCard('device_unreachable');
     this.highNetworkTrafficTrigger = this.homey.flow.getDeviceTriggerCard('high_network_traffic');
     this.highDiskIOTrigger = this.homey.flow.getDeviceTriggerCard('high_disk_io');
+    this.diskSpaceLowTrigger = this.homey.flow.getDeviceTriggerCard('disk_space_low');
 
     // Register run listeners for triggers with arguments
     this.cpuAboveThresholdTrigger.registerRunListener(async (args, state) => {
@@ -40,6 +41,11 @@ module.exports = class ProxmoxDriver extends Homey.Driver {
       // Check if total disk I/O is above the user-specified threshold
       const totalIO = state.disk_read + state.disk_write;
       return totalIO > args.threshold;
+    });
+
+    this.diskSpaceLowTrigger.registerRunListener(async (args, state) => {
+      // Check if free disk space is below the user-specified threshold
+      return state.disk_free < args.threshold;
     });
 
     // Register flow card conditions

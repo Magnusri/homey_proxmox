@@ -212,6 +212,22 @@ module.exports = class ProxmoxDevice extends Homey.Device {
     } else if (totalDiskIO <= diskIOHysteresis) {
       this.thresholdTracking.diskIO.above = false;
     }
+
+    // Trigger disk space low (free space below 20%)
+    const diskUsage = this.getCapabilityValue('measure_disk') || 0;
+    const diskFree = 100 - diskUsage;
+    if (!this.thresholdTracking.diskSpace) {
+      this.thresholdTracking.diskSpace = { below: false };
+    }
+
+    if (diskFree < 20 && !this.thresholdTracking.diskSpace.below) {
+      this.thresholdTracking.diskSpace.below = true;
+      if (this.driver.diskSpaceLowTrigger) {
+        this.driver.diskSpaceLowTrigger.trigger(this, { disk_free: diskFree }).catch(this.error);
+      }
+    } else if (diskFree > 25) {
+      this.thresholdTracking.diskSpace.below = false;
+    }
   }
 
   /**
@@ -538,9 +554,16 @@ module.exports = class ProxmoxDevice extends Homey.Device {
         await this.checkAndTriggerFlowCards(isRunning, cpuPercent, memPercent);
 
         this.log(`VM ${data.vmid} status: ${status.status} (${isRunning ? 'ON' : 'OFF'})`);
+
+        // Mark device as available
+        await this.setAvailable().catch(this.error);
       }
     } catch (error) {
       this.error('Failed to update status:', error.message);
+
+      // Mark device as unavailable with error message
+      await this.setUnavailable(this.homey.__('errors.connection_failed', { error: error.message })).catch(this.error);
+
       // Trigger alarm_generic on error
       if (this.hasCapability('alarm_generic')) {
         await this.setCapabilityValue('alarm_generic', true).catch(this.error);
@@ -618,6 +641,9 @@ module.exports = class ProxmoxDevice extends Homey.Device {
    */
   async onAdded() {
     this.log('ProxmoxDevice has been added');
+
+    // Set initial availability
+    await this.setAvailable().catch(this.error);
   }
 
   /**

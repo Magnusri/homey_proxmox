@@ -24,5 +24,8 @@
     "measure_disk_write": {
       "title": "Disk write"
     }
+  },
+  "errors": {
+    "connection_failed": "Connection failed: {error}"
   }
 }
