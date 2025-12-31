@@ -20,6 +20,38 @@ module.exports = class ProxmoxDevice extends Homey.Device {
   }
 
   /**
+   * Set capability value and log to Insights if enabled
+   */
+  async setCapabilityValueWithInsights(capability, value) {
+    await this.setCapabilityValue(capability, value);
+
+    // Log to Insights if enabled
+    const settings = this.getSettings();
+    if (settings.enableInsights !== false) {
+      // Only log these specific capabilities for historical tracking
+      const insightCapabilities = [
+        'measure_cpu',
+        'measure_memory',
+        'measure_disk',
+        'measure_network_in',
+        'measure_network_out',
+        'measure_disk_read',
+        'measure_disk_write',
+      ];
+
+      if (insightCapabilities.includes(capability)) {
+        try {
+          await this.homey.insights.createLog(capability, { title: { en: this.getName() } })
+            .catch(() => {}); // Ignore if log already exists
+          await this.homey.insights.createEntry(capability, value).catch(this.error);
+        } catch (error) {
+          // Silently fail if Insights not available
+        }
+      }
+    }
+  }
+
+  /**
    * Helper function to calculate rate from cumulative counters
    */
   calculateRate(currentValue, previousValue, intervalSeconds) {
@@ -119,23 +151,27 @@ module.exports = class ProxmoxDevice extends Homey.Device {
     this.previousState.isRunning = isRunning;
 
     // Trigger CPU threshold (only when crossing threshold, not continuously)
-    if (cpuPercent > 90 && !this.thresholdTracking.cpu.above) {
+    const cpuThreshold = this.thresholdTracking.cpu.threshold;
+    const cpuHysteresis = cpuThreshold - 5; // 5% hysteresis
+    if (cpuPercent > cpuThreshold && !this.thresholdTracking.cpu.above) {
       this.thresholdTracking.cpu.above = true;
       if (this.driver.cpuAboveThresholdTrigger) {
         this.driver.cpuAboveThresholdTrigger.trigger(this, { cpu_usage: cpuPercent }).catch(this.error);
       }
-    } else if (cpuPercent <= 85) {
-      // Reset when below 85% to add hysteresis
+    } else if (cpuPercent <= cpuHysteresis) {
+      // Reset when below threshold - hysteresis to add stability
       this.thresholdTracking.cpu.above = false;
     }
 
     // Trigger memory threshold
-    if (memPercent > 90 && !this.thresholdTracking.memory.above) {
+    const memoryThreshold = this.thresholdTracking.memory.threshold;
+    const memoryHysteresis = memoryThreshold - 5; // 5% hysteresis
+    if (memPercent > memoryThreshold && !this.thresholdTracking.memory.above) {
       this.thresholdTracking.memory.above = true;
       if (this.driver.memoryAboveThresholdTrigger) {
         this.driver.memoryAboveThresholdTrigger.trigger(this, { memory_usage: memPercent }).catch(this.error);
       }
-    } else if (memPercent <= 85) {
+    } else if (memPercent <= memoryHysteresis) {
       this.thresholdTracking.memory.above = false;
     }
 
@@ -143,8 +179,10 @@ module.exports = class ProxmoxDevice extends Homey.Device {
     const netIn = this.getCapabilityValue('measure_network_in') || 0;
     const netOut = this.getCapabilityValue('measure_network_out') || 0;
     const totalNetwork = netIn + netOut;
+    const networkThreshold = this.thresholdTracking.network.threshold;
+    const networkHysteresis = networkThreshold * 0.8; // 20% hysteresis
 
-    if (totalNetwork > 10 && !this.thresholdTracking.network.above) {
+    if (totalNetwork > networkThreshold && !this.thresholdTracking.network.above) {
       this.thresholdTracking.network.above = true;
       if (this.driver.highNetworkTrafficTrigger) {
         this.driver.highNetworkTrafficTrigger.trigger(this, {
@@ -152,7 +190,7 @@ module.exports = class ProxmoxDevice extends Homey.Device {
           network_out: netOut,
         }).catch(this.error);
       }
-    } else if (totalNetwork <= 8) {
+    } else if (totalNetwork <= networkHysteresis) {
       this.thresholdTracking.network.above = false;
     }
 
@@ -160,8 +198,10 @@ module.exports = class ProxmoxDevice extends Homey.Device {
     const diskRead = this.getCapabilityValue('measure_disk_read') || 0;
     const diskWrite = this.getCapabilityValue('measure_disk_write') || 0;
     const totalDiskIO = diskRead + diskWrite;
+    const diskIOThreshold = this.thresholdTracking.diskIO.threshold;
+    const diskIOHysteresis = diskIOThreshold * 0.8; // 20% hysteresis
 
-    if (totalDiskIO > 50 && !this.thresholdTracking.diskIO.above) {
+    if (totalDiskIO > diskIOThreshold && !this.thresholdTracking.diskIO.above) {
       this.thresholdTracking.diskIO.above = true;
       if (this.driver.highDiskIOTrigger) {
         this.driver.highDiskIOTrigger.trigger(this, {
@@ -169,7 +209,7 @@ module.exports = class ProxmoxDevice extends Homey.Device {
           disk_write: diskWrite,
         }).catch(this.error);
       }
-    } else if (totalDiskIO <= 40) {
+    } else if (totalDiskIO <= diskIOHysteresis) {
       this.thresholdTracking.diskIO.above = false;
     }
   }
@@ -203,12 +243,13 @@ module.exports = class ProxmoxDevice extends Homey.Device {
       diskIOTotal: 0,
     };
 
-    // Initialize threshold tracking for triggers
+    // Load settings and initialize threshold tracking
+    const settings = this.getSettings();
     this.thresholdTracking = {
-      cpu: { above: false, threshold: 90 },
-      memory: { above: false, threshold: 90 },
-      network: { above: false, threshold: 10 },
-      diskIO: { above: false, threshold: 50 },
+      cpu: { above: false, threshold: settings.cpuThreshold || 90 },
+      memory: { above: false, threshold: settings.memoryThreshold || 90 },
+      network: { above: false, threshold: settings.networkThreshold || 10 },
+      diskIO: { above: false, threshold: settings.diskIOThreshold || 50 },
     };
 
     // Ensure capabilities exist for devices
@@ -247,13 +288,73 @@ module.exports = class ProxmoxDevice extends Homey.Device {
       this.log('Node device - onoff is read-only (status display only)');
     }
 
-    // Set up polling for status updates
-    this.pollInterval = setInterval(() => {
-      this.updateStatus().catch(this.error);
-    }, 30000); // Poll every 30 seconds
+    // Register settings listener
+    this.registerMultipleCapabilityListener([], async () => {
+      // Settings changed, update thresholds
+      const newSettings = this.getSettings();
+      this.thresholdTracking.cpu.threshold = newSettings.cpuThreshold || 90;
+      this.thresholdTracking.memory.threshold = newSettings.memoryThreshold || 90;
+      this.thresholdTracking.network.threshold = newSettings.networkThreshold || 10;
+      this.thresholdTracking.diskIO.threshold = newSettings.diskIOThreshold || 50;
+
+      // Restart polling with new interval
+      if (this.pollInterval) {
+        clearInterval(this.pollInterval);
+      }
+      this.startPolling();
+    }, 500);
+
+    // Start polling
+    this.startPolling();
 
     // Initial status update
     await this.updateStatus();
+  }
+
+  /**
+   * Start polling for status updates
+   */
+  startPolling() {
+    const settings = this.getSettings();
+    const pollingInterval = (settings.pollingInterval || 30) * 1000;
+    this.log(`Starting polling with interval: ${pollingInterval}ms`);
+
+    this.pollInterval = setInterval(() => {
+      this.updateStatus().catch(this.error);
+    }, pollingInterval);
+  }
+
+  /**
+   * onSettings is called when the user updates the device's settings.
+   */
+  async onSettings({ oldSettings, newSettings, changedKeys }) {
+    this.log('Settings changed:', changedKeys);
+
+    // Update thresholds
+    if (changedKeys.includes('cpuThreshold')) {
+      this.thresholdTracking.cpu.threshold = newSettings.cpuThreshold;
+      this.log(`CPU threshold updated to ${newSettings.cpuThreshold}%`);
+    }
+    if (changedKeys.includes('memoryThreshold')) {
+      this.thresholdTracking.memory.threshold = newSettings.memoryThreshold;
+      this.log(`Memory threshold updated to ${newSettings.memoryThreshold}%`);
+    }
+    if (changedKeys.includes('networkThreshold')) {
+      this.thresholdTracking.network.threshold = newSettings.networkThreshold;
+      this.log(`Network threshold updated to ${newSettings.networkThreshold} MB/s`);
+    }
+    if (changedKeys.includes('diskIOThreshold')) {
+      this.thresholdTracking.diskIO.threshold = newSettings.diskIOThreshold;
+      this.log(`Disk I/O threshold updated to ${newSettings.diskIOThreshold} MB/s`);
+    }
+
+    // Update polling interval if changed
+    if (changedKeys.includes('pollingInterval')) {
+      if (this.pollInterval) {
+        clearInterval(this.pollInterval);
+      }
+      this.startPolling();
+    }
   }
 
   /**
@@ -521,19 +622,6 @@ module.exports = class ProxmoxDevice extends Homey.Device {
 
   /**
    * onSettings is called when the user updates the device's settings.
-   * @param {object} event the onSettings event data
-   * @param {object} event.oldSettings The old settings object
-   * @param {object} event.newSettings The new settings object
-   * @param {string[]} event.changedKeys An array of keys changed since the previous version
-   * @returns {Promise<string|void>} return a custom message that will be displayed
-   */
-  async onSettings({ oldSettings, newSettings, changedKeys }) {
-    this.log('ProxmoxDevice settings where changed');
-
-    // Re-fetch status with new settings
-    await this.updateStatus();
-  }
-
   /**
    * onRenamed is called when the user updates the device's name.
    * This method can be used this to synchronise the name to the device.

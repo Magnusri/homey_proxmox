@@ -445,6 +445,110 @@
           "template": "add_devices"
         }
       ],
+      "repair": [
+        {
+          "id": "login"
+        }
+      ],
+      "settings": [
+        {
+          "type": "group",
+          "label": {
+            "en": "Monitoring Settings"
+          },
+          "children": [
+            {
+              "id": "pollingInterval",
+              "type": "number",
+              "label": {
+                "en": "Polling Interval (seconds)"
+              },
+              "value": 30,
+              "min": 10,
+              "max": 300,
+              "step": 5,
+              "hint": {
+                "en": "How often to update device status (10-300 seconds)"
+              }
+            },
+            {
+              "id": "enableInsights",
+              "type": "checkbox",
+              "label": {
+                "en": "Enable Insights"
+              },
+              "value": true,
+              "hint": {
+                "en": "Track historical data for CPU, memory, and disk usage"
+              }
+            }
+          ]
+        },
+        {
+          "type": "group",
+          "label": {
+            "en": "Alarm Thresholds"
+          },
+          "children": [
+            {
+              "id": "cpuThreshold",
+              "type": "number",
+              "label": {
+                "en": "CPU Threshold (%)"
+              },
+              "value": 90,
+              "min": 50,
+              "max": 100,
+              "step": 5,
+              "hint": {
+                "en": "Trigger alarm when CPU exceeds this percentage"
+              }
+            },
+            {
+              "id": "memoryThreshold",
+              "type": "number",
+              "label": {
+                "en": "Memory Threshold (%)"
+              },
+              "value": 90,
+              "min": 50,
+              "max": 100,
+              "step": 5,
+              "hint": {
+                "en": "Trigger alarm when memory exceeds this percentage"
+              }
+            },
+            {
+              "id": "networkThreshold",
+              "type": "number",
+              "label": {
+                "en": "Network Threshold (MB/s)"
+              },
+              "value": 10,
+              "min": 1,
+              "max": 1000,
+              "step": 1,
+              "hint": {
+                "en": "Trigger alarm when network traffic exceeds this rate"
+              }
+            },
+            {
+              "id": "diskIOThreshold",
+              "type": "number",
+              "label": {
+                "en": "Disk I/O Threshold (MB/s)"
+              },
+              "value": 50,
+              "min": 1,
+              "max": 1000,
+              "step": 5,
+              "hint": {
+                "en": "Trigger alarm when disk I/O exceeds this rate"
+              }
+            }
+          ]
+        }
+      ],
       "images": {
         "small": "/drivers/proxmox/assets/images/small.png",
         "large": "/drivers/proxmox/assets/images/large.png",
