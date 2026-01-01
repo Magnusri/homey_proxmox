@@ -1,1 +1,31 @@
-{}
+{
+  "capabilities": {
+    "measure_cpu": {
+      "title": "CPU usage"
+    },
+    "measure_memory": {
+      "title": "Memory usage"
+    },
+    "measure_disk": {
+      "title": "Disk usage"
+    },
+    "sensor_uptime": {
+      "title": "Uptime"
+    },
+    "measure_network_in": {
+      "title": "Network in"
+    },
+    "measure_network_out": {
+      "title": "Network out"
+    },
+    "measure_disk_read": {
+      "title": "Disk read"
+    },
+    "measure_disk_write": {
+      "title": "Disk write"
+    }
+  },
+  "errors": {
+    "connection_failed": "Connection failed: {error}"
+  }
+}

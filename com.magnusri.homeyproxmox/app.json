@@ -23,6 +23,422 @@
     "large": "/assets/images/large.png",
     "xlarge": "/assets/images/xlarge.png"
   },
+  "flow": {
+    "triggers": [
+      {
+        "title": {
+          "en": "CPU usage above threshold"
+        },
+        "titleFormatted": {
+          "en": "CPU usage above [[threshold]]%"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=proxmox"
+          },
+          {
+            "type": "number",
+            "name": "threshold",
+            "min": 0,
+            "max": 100,
+            "step": 1,
+            "placeholder": {
+              "en": "90"
+            }
+          }
+        ],
+        "tokens": [
+          {
+            "name": "cpu_usage",
+            "type": "number",
+            "title": {
+              "en": "CPU usage"
+            },
+            "example": 85.5
+          }
+        ],
+        "id": "cpu_above_threshold"
+      },
+      {
+        "title": {
+          "en": "Device becomes unreachable"
+        },
+        "titleFormatted": {
+          "en": "becomes unreachable"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=proxmox"
+          }
+        ],
+        "id": "device_unreachable"
+      },
+      {
+        "title": {
+          "en": "Disk space low"
+        },
+        "titleFormatted": {
+          "en": "disk space below [[threshold]]%"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=proxmox"
+          },
+          {
+            "type": "number",
+            "name": "threshold",
+            "min": 5,
+            "max": 50,
+            "step": 5,
+            "placeholder": {
+              "en": "20"
+            }
+          }
+        ],
+        "tokens": [
+          {
+            "name": "disk_free",
+            "type": "number",
+            "title": {
+              "en": "Free disk space"
+            },
+            "example": 15.2
+          }
+        ],
+        "id": "disk_space_low"
+      },
+      {
+        "title": {
+          "en": "High disk I/O detected"
+        },
+        "titleFormatted": {
+          "en": "disk I/O above [[threshold]] MB/s"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=proxmox"
+          },
+          {
+            "type": "number",
+            "name": "threshold",
+            "min": 0,
+            "step": 0.1,
+            "placeholder": {
+              "en": "50"
+            }
+          }
+        ],
+        "tokens": [
+          {
+            "name": "disk_read",
+            "type": "number",
+            "title": {
+              "en": "Disk read"
+            },
+            "example": 65.2
+          },
+          {
+            "name": "disk_write",
+            "type": "number",
+            "title": {
+              "en": "Disk write"
+            },
+            "example": 45.8
+          }
+        ],
+        "id": "high_disk_io"
+      },
+      {
+        "title": {
+          "en": "High network traffic detected"
+        },
+        "titleFormatted": {
+          "en": "network traffic above [[threshold]] MB/s"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=proxmox"
+          },
+          {
+            "type": "number",
+            "name": "threshold",
+            "min": 0,
+            "step": 0.1,
+            "placeholder": {
+              "en": "10"
+            }
+          }
+        ],
+        "tokens": [
+          {
+            "name": "network_in",
+            "type": "number",
+            "title": {
+              "en": "Network in"
+            },
+            "example": 12.5
+          },
+          {
+            "name": "network_out",
+            "type": "number",
+            "title": {
+              "en": "Network out"
+            },
+            "example": 8.3
+          }
+        ],
+        "id": "high_network_traffic"
+      },
+      {
+        "title": {
+          "en": "Memory usage above threshold"
+        },
+        "titleFormatted": {
+          "en": "memory usage above [[threshold]]%"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=proxmox"
+          },
+          {
+            "type": "number",
+            "name": "threshold",
+            "min": 0,
+            "max": 100,
+            "step": 1,
+            "placeholder": {
+              "en": "90"
+            }
+          }
+        ],
+        "tokens": [
+          {
+            "name": "memory_usage",
+            "type": "number",
+            "title": {
+              "en": "Memory usage"
+            },
+            "example": 78.3
+          }
+        ],
+        "id": "memory_above_threshold"
+      },
+      {
+        "title": {
+          "en": "VM/LXC started"
+        },
+        "titleFormatted": {
+          "en": "started"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=proxmox"
+          }
+        ],
+        "id": "vm_started"
+      },
+      {
+        "title": {
+          "en": "VM/LXC stopped"
+        },
+        "titleFormatted": {
+          "en": "stopped"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=proxmox"
+          }
+        ],
+        "id": "vm_stopped"
+      }
+    ],
+    "conditions": [
+      {
+        "title": {
+          "en": "CPU usage !{{is|is not}} above threshold"
+        },
+        "titleFormatted": {
+          "en": "CPU usage !{{is|is not}} above [[threshold]]%"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=proxmox"
+          },
+          {
+            "type": "number",
+            "name": "threshold",
+            "min": 0,
+            "max": 100,
+            "step": 1,
+            "placeholder": {
+              "en": "80"
+            }
+          }
+        ],
+        "id": "cpu_above"
+      },
+      {
+        "title": {
+          "en": "VM/LXC !{{is|is not}} running"
+        },
+        "titleFormatted": {
+          "en": "!{{is|is not}} running"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=proxmox"
+          }
+        ],
+        "id": "is_running"
+      },
+      {
+        "title": {
+          "en": "Memory usage !{{is|is not}} above threshold"
+        },
+        "titleFormatted": {
+          "en": "memory usage !{{is|is not}} above [[threshold]]%"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=proxmox"
+          },
+          {
+            "type": "number",
+            "name": "threshold",
+            "min": 0,
+            "max": 100,
+            "step": 1,
+            "placeholder": {
+              "en": "80"
+            }
+          }
+        ],
+        "id": "memory_above"
+      },
+      {
+        "title": {
+          "en": "Network traffic !{{is|is not}} above threshold"
+        },
+        "titleFormatted": {
+          "en": "network traffic !{{is|is not}} above [[threshold]] MB/s"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=proxmox"
+          },
+          {
+            "type": "number",
+            "name": "threshold",
+            "min": 0,
+            "step": 0.1,
+            "placeholder": {
+              "en": "10"
+            }
+          }
+        ],
+        "id": "network_above"
+      },
+      {
+        "title": {
+          "en": "Uptime !{{is|is not}} greater than"
+        },
+        "titleFormatted": {
+          "en": "uptime !{{is|is not}} greater than [[hours]] hours"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=proxmox"
+          },
+          {
+            "type": "number",
+            "name": "hours",
+            "min": 0,
+            "step": 0.1,
+            "placeholder": {
+              "en": "24"
+            }
+          }
+        ],
+        "id": "uptime_greater"
+      }
+    ],
+    "actions": [
+      {
+        "title": {
+          "en": "Restart VM/LXC"
+        },
+        "titleFormatted": {
+          "en": "Restart [[device]]"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=proxmox"
+          }
+        ],
+        "id": "restart_vm"
+      },
+      {
+        "title": {
+          "en": "Start VM/LXC"
+        },
+        "titleFormatted": {
+          "en": "Start [[device]]"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=proxmox"
+          }
+        ],
+        "id": "start_vm"
+      },
+      {
+        "title": {
+          "en": "Stop VM/LXC"
+        },
+        "titleFormatted": {
+          "en": "Stop [[device]]"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=proxmox"
+          }
+        ],
+        "id": "stop_vm"
+      }
+    ]
+  },
   "drivers": [
     {
       "name": {
@@ -30,11 +446,18 @@
       },
       "class": "service",
       "capabilities": [
+        "onoff",
+        "measure_cpu",
+        "measure_memory",
+        "measure_disk",
+        "sensor_uptime",
+        "measure_network_in",
+        "measure_network_out",
+        "measure_disk_read",
+        "measure_disk_write",
         "alarm_connectivity",
         "alarm_generic",
-        "alarm_heat",
-        "alarm_lost",
-        "onoff"
+        "alarm_heat"
       ],
       "platforms": [
         "local"
@@ -58,6 +481,110 @@
           "template": "add_devices"
         }
       ],
+      "repair": [
+        {
+          "id": "login"
+        }
+      ],
+      "settings": [
+        {
+          "type": "group",
+          "label": {
+            "en": "Monitoring Settings"
+          },
+          "children": [
+            {
+              "id": "pollingInterval",
+              "type": "number",
+              "label": {
+                "en": "Polling Interval (seconds)"
+              },
+              "value": 30,
+              "min": 10,
+              "max": 300,
+              "step": 5,
+              "hint": {
+                "en": "How often to update device status (10-300 seconds)"
+              }
+            },
+            {
+              "id": "enableInsights",
+              "type": "checkbox",
+              "label": {
+                "en": "Enable Insights"
+              },
+              "value": true,
+              "hint": {
+                "en": "Track historical data for CPU, memory, and disk usage"
+              }
+            }
+          ]
+        },
+        {
+          "type": "group",
+          "label": {
+            "en": "Alarm Thresholds"
+          },
+          "children": [
+            {
+              "id": "cpuThreshold",
+              "type": "number",
+              "label": {
+                "en": "CPU Threshold (%)"
+              },
+              "value": 90,
+              "min": 50,
+              "max": 100,
+              "step": 5,
+              "hint": {
+                "en": "Trigger alarm when CPU exceeds this percentage"
+              }
+            },
+            {
+              "id": "memoryThreshold",
+              "type": "number",
+              "label": {
+                "en": "Memory Threshold (%)"
+              },
+              "value": 90,
+              "min": 50,
+              "max": 100,
+              "step": 5,
+              "hint": {
+                "en": "Trigger alarm when memory exceeds this percentage"
+              }
+            },
+            {
+              "id": "networkThreshold",
+              "type": "number",
+              "label": {
+                "en": "Network Threshold (MB/s)"
+              },
+              "value": 10,
+              "min": 1,
+              "max": 1000,
+              "step": 1,
+              "hint": {
+                "en": "Trigger alarm when network traffic exceeds this rate"
+              }
+            },
+            {
+              "id": "diskIOThreshold",
+              "type": "number",
+              "label": {
+                "en": "Disk I/O Threshold (MB/s)"
+              },
+              "value": 50,
+              "min": 1,
+              "max": 1000,
+              "step": 5,
+              "hint": {
+                "en": "Trigger alarm when disk I/O exceeds this rate"
+              }
+            }
+          ]
+        }
+      ],
       "images": {
         "small": "/drivers/proxmox/assets/images/small.png",
         "large": "/drivers/proxmox/assets/images/large.png",
@@ -65,5 +592,122 @@
       },
       "id": "proxmox"
     }
-  ]
+  ],
+  "capabilities": {
+    "measure_cpu": {
+      "type": "number",
+      "title": {
+        "en": "CPU usage"
+      },
+      "units": {
+        "en": "%"
+      },
+      "getable": true,
+      "setable": false,
+      "uiComponent": "sensor",
+      "min": 0,
+      "max": 100,
+      "decimals": 1
+    },
+    "measure_disk": {
+      "type": "number",
+      "title": {
+        "en": "Disk usage"
+      },
+      "units": {
+        "en": "%"
+      },
+      "getable": true,
+      "setable": false,
+      "uiComponent": "sensor",
+      "min": 0,
+      "max": 100,
+      "decimals": 1
+    },
+    "measure_disk_read": {
+      "type": "number",
+      "title": {
+        "en": "Disk read"
+      },
+      "units": {
+        "en": "MB/s"
+      },
+      "getable": true,
+      "setable": false,
+      "uiComponent": "sensor",
+      "min": 0,
+      "decimals": 2
+    },
+    "measure_disk_write": {
+      "type": "number",
+      "title": {
+        "en": "Disk write"
+      },
+      "units": {
+        "en": "MB/s"
+      },
+      "getable": true,
+      "setable": false,
+      "uiComponent": "sensor",
+      "min": 0,
+      "decimals": 2
+    },
+    "measure_memory": {
+      "type": "number",
+      "title": {
+        "en": "Memory usage"
+      },
+      "units": {
+        "en": "%"
+      },
+      "getable": true,
+      "setable": false,
+      "uiComponent": "sensor",
+      "min": 0,
+      "max": 100,
+      "decimals": 1
+    },
+    "measure_network_in": {
+      "type": "number",
+      "title": {
+        "en": "Network in"
+      },
+      "units": {
+        "en": "MB/s"
+      },
+      "getable": true,
+      "setable": false,
+      "uiComponent": "sensor",
+      "min": 0,
+      "decimals": 2
+    },
+    "measure_network_out": {
+      "type": "number",
+      "title": {
+        "en": "Network out"
+      },
+      "units": {
+        "en": "MB/s"
+      },
+      "getable": true,
+      "setable": false,
+      "uiComponent": "sensor",
+      "min": 0,
+      "decimals": 2
+    },
+    "sensor_uptime": {
+      "type": "number",
+      "title": {
+        "en": "Uptime"
+      },
+      "units": {
+        "en": "hours"
+      },
+      "getable": true,
+      "setable": false,
+      "uiComponent": "sensor",
+      "min": 0,
+      "decimals": 1
+    }
+  }
 }

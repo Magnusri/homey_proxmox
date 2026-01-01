@@ -1,0 +1,25 @@
+{
+  "title": {
+    "en": "CPU usage !{{is|is not}} above threshold"
+  },
+  "titleFormatted": {
+    "en": "CPU usage !{{is|is not}} above [[threshold]]%"
+  },
+  "args": [
+    {
+      "type": "device",
+      "name": "device",
+      "filter": "driver_id=proxmox"
+    },
+    {
+      "type": "number",
+      "name": "threshold",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "placeholder": {
+        "en": "80"
+      }
+    }
+  ]
+}

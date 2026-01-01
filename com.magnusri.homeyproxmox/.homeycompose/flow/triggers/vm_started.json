@@ -1,0 +1,15 @@
+{
+  "title": {
+    "en": "VM/LXC started"
+  },
+  "titleFormatted": {
+    "en": "started"
+  },
+  "args": [
+    {
+      "type": "device",
+      "name": "device",
+      "filter": "driver_id=proxmox"
+    }
+  ]
+}

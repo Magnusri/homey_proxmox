@@ -1,0 +1,15 @@
+{
+  "title": {
+    "en": "Restart VM/LXC"
+  },
+  "titleFormatted": {
+    "en": "Restart [[device]]"
+  },
+  "args": [
+    {
+      "type": "device",
+      "name": "device",
+      "filter": "driver_id=proxmox"
+    }
+  ]
+}

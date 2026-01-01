@@ -1,0 +1,15 @@
+{
+  "type": "number",
+  "title": {
+    "en": "Disk usage"
+  },
+  "units": {
+    "en": "%"
+  },
+  "getable": true,
+  "setable": false,
+  "uiComponent": "sensor",
+  "min": 0,
+  "max": 100,
+  "decimals": 1
+}

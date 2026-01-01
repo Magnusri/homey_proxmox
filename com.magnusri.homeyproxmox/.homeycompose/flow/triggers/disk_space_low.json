@@ -1,0 +1,35 @@
+{
+  "title": {
+    "en": "Disk space low"
+  },
+  "titleFormatted": {
+    "en": "disk space below [[threshold]]%"
+  },
+  "args": [
+    {
+      "type": "device",
+      "name": "device",
+      "filter": "driver_id=proxmox"
+    },
+    {
+      "type": "number",
+      "name": "threshold",
+      "min": 5,
+      "max": 50,
+      "step": 5,
+      "placeholder": {
+        "en": "20"
+      }
+    }
+  ],
+  "tokens": [
+    {
+      "name": "disk_free",
+      "type": "number",
+      "title": {
+        "en": "Free disk space"
+      },
+      "example": 15.2
+    }
+  ]
+}

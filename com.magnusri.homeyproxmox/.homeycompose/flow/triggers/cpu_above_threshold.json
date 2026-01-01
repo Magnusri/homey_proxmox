@@ -1,0 +1,35 @@
+{
+  "title": {
+    "en": "CPU usage above threshold"
+  },
+  "titleFormatted": {
+    "en": "CPU usage above [[threshold]]%"
+  },
+  "args": [
+    {
+      "type": "device",
+      "name": "device",
+      "filter": "driver_id=proxmox"
+    },
+    {
+      "type": "number",
+      "name": "threshold",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "placeholder": {
+        "en": "90"
+      }
+    }
+  ],
+  "tokens": [
+    {
+      "name": "cpu_usage",
+      "type": "number",
+      "title": {
+        "en": "CPU usage"
+      },
+      "example": 85.5
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "title": {
+    "en": "High disk I/O detected"
+  },
+  "titleFormatted": {
+    "en": "disk I/O above [[threshold]] MB/s"
+  },
+  "args": [
+    {
+      "type": "device",
+      "name": "device",
+      "filter": "driver_id=proxmox"
+    },
+    {
+      "type": "number",
+      "name": "threshold",
+      "min": 0,
+      "step": 0.1,
+      "placeholder": {
+        "en": "50"
+      }
+    }
+  ],
+  "tokens": [
+    {
+      "name": "disk_read",
+      "type": "number",
+      "title": {
+        "en": "Disk read"
+      },
+      "example": 65.2
+    },
+    {
+      "name": "disk_write",
+      "type": "number",
+      "title": {
+        "en": "Disk write"
+      },
+      "example": 45.8
+    }
+  ]
+}

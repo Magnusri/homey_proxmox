@@ -1,0 +1,15 @@
+{
+  "title": {
+    "en": "VM/LXC !{{is|is not}} running"
+  },
+  "titleFormatted": {
+    "en": "!{{is|is not}} running"
+  },
+  "args": [
+    {
+      "type": "device",
+      "name": "device",
+      "filter": "driver_id=proxmox"
+    }
+  ]
+}
