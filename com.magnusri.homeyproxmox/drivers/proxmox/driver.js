@@ -268,4 +268,35 @@ module.exports = class ProxmoxDriver extends Homey.Driver {
     return [];
   }
 
+  async onRepair(session, device) {
+    session.setHandler('login', async (data) => {
+      const { host, tokenID, tokenSecret } = data;
+      const port = data.port || '8006';
+
+      try {
+        // Test connection with new credentials
+        const result = await ProxmoxAPI.testConnection(host, port, tokenID, tokenSecret);
+
+        // Update device settings with new credentials
+        await device.setSettings({
+          host,
+          port,
+          tokenID,
+          tokenSecret,
+        });
+
+        // Mark device as available
+        await device.setAvailable();
+
+        // Trigger an immediate status update
+        await device.updateStatus();
+
+        return result;
+      } catch (error) {
+        this.error('Repair failed:', error.message);
+        throw new Error(`Failed to repair device: ${error.message}`);
+      }
+    });
+  }
+
 };
