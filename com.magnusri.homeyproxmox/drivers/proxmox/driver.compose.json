@@ -17,6 +17,63 @@
     "alarm_generic",
     "alarm_heat"
   ],
+  "capabilitiesOptions": {
+    "measure_cpu": {
+      "title": {
+        "en": "CPU"
+      }
+    },
+    "measure_memory": {
+      "title": {
+        "en": "RAM"
+      }
+    },
+    "measure_disk": {
+      "title": {
+        "en": "Disk"
+      }
+    },
+    "sensor_uptime": {
+      "title": {
+        "en": "Uptime"
+      }
+    },
+    "measure_network_in": {
+      "title": {
+        "en": "Net In"
+      }
+    },
+    "measure_network_out": {
+      "title": {
+        "en": "Net Out"
+      }
+    },
+    "measure_disk_read": {
+      "title": {
+        "en": "Disk Read"
+      }
+    },
+    "measure_disk_write": {
+      "title": {
+        "en": "Disk Write"
+      }
+    },
+    "alarm_connectivity": {
+      "title": {
+        "en": "Connection"
+      }
+    },
+    "alarm_generic": {
+      "title": {
+        "en": "Error"
+      }
+    },
+    "alarm_heat": {
+      "title": {
+        "en": "Overload"
+      }
+    }
+  },
   "platforms": [
     "local"
   ],
