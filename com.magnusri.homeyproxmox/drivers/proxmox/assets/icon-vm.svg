@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500">
+  <!-- Virtual Machine icon - monitor with code/window -->
+  <rect x="80" y="80" width="340" height="260" rx="15" fill="currentColor"/>
+  <rect x="100" y="100" width="300" height="200" rx="8" fill="#fff"/>
+  
+  <!-- Window title bar -->
+  <rect x="100" y="100" width="300" height="30" rx="8" fill="currentColor" opacity="0.3"/>
+  <circle cx="120" cy="115" r="6" fill="#fff"/>
+  <circle cx="140" cy="115" r="6" fill="#fff"/>
+  <circle cx="160" cy="115" r="6" fill="#fff"/>
+  
+  <!-- Content lines -->
+  <rect x="120" y="150" width="120" height="10" rx="5" fill="currentColor" opacity="0.3"/>
+  <rect x="120" y="175" width="180" height="10" rx="5" fill="currentColor" opacity="0.3"/>
+  <rect x="120" y="200" width="150" height="10" rx="5" fill="currentColor" opacity="0.3"/>
+  <rect x="120" y="225" width="200" height="10" rx="5" fill="currentColor" opacity="0.3"/>
+  <rect x="120" y="250" width="160" height="10" rx="5" fill="currentColor" opacity="0.3"/>
+  
+  <!-- Stand -->
+  <rect x="220" y="340" width="60" height="40" fill="currentColor"/>
+  <rect x="180" y="380" width="140" height="20" rx="10" fill="currentColor"/>
+</svg>
