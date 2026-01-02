@@ -402,8 +402,8 @@ module.exports = class ProxmoxDevice extends Homey.Device {
           }
 
           // Memory usage percentage
-          if (status.memory !== undefined && status.maxmem !== undefined && status.maxmem > 0) {
-            memPercent = this.roundToOneDecimal((status.memory / status.maxmem) * 100);
+          if (status.mem !== undefined && status.maxmem !== undefined && status.maxmem > 0) {
+            memPercent = this.roundToOneDecimal((status.mem / status.maxmem) * 100);
             await this.setCapabilityValue('measure_memory', memPercent);
           }
 
