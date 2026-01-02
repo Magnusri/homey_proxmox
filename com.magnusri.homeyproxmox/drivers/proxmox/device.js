@@ -438,6 +438,12 @@ module.exports = class ProxmoxDevice extends Homey.Device {
         await this.checkAndTriggerFlowCards(isOnline, cpuPercent, memPercent);
 
         this.log(`Node ${data.node} status: ${status.uptime} (${isOnline ? 'ON' : 'OFF'})`);
+
+        // Mark device as available and clear error alarms
+        await this.setAvailable().catch(this.error);
+        if (this.hasCapability('alarm_generic')) {
+          await this.setCapabilityValue('alarm_generic', false).catch(this.error);
+        }
       } else if (data.type === 'lxc') {
         const status = await ProxmoxAPI.getLXCStatus(
           settings.host, settings.port, data.node, data.vmid,
@@ -496,6 +502,12 @@ module.exports = class ProxmoxDevice extends Homey.Device {
         await this.checkAndTriggerFlowCards(isRunning, cpuPercent, memPercent);
 
         this.log(`LXC ${data.vmid} status: ${status.status} (${isRunning ? 'ON' : 'OFF'})`);
+
+        // Mark device as available and clear error alarms
+        await this.setAvailable().catch(this.error);
+        if (this.hasCapability('alarm_generic')) {
+          await this.setCapabilityValue('alarm_generic', false).catch(this.error);
+        }
       } else if (data.type === 'vm') {
         const status = await ProxmoxAPI.getVMStatus(
           settings.host, settings.port, data.node, data.vmid,
@@ -555,8 +567,11 @@ module.exports = class ProxmoxDevice extends Homey.Device {
 
         this.log(`VM ${data.vmid} status: ${status.status} (${isRunning ? 'ON' : 'OFF'})`);
 
-        // Mark device as available
+        // Mark device as available and clear error alarms
         await this.setAvailable().catch(this.error);
+        if (this.hasCapability('alarm_generic')) {
+          await this.setCapabilityValue('alarm_generic', false).catch(this.error);
+        }
       }
     } catch (error) {
       this.error('Failed to update status:', error.message);
