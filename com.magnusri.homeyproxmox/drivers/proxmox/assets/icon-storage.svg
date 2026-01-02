@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500">
+  <!-- Storage/Database icon - cylinder stack -->
+  <ellipse cx="250" cy="150" rx="180" ry="60" fill="currentColor"/>
+  <rect x="70" y="150" width="360" height="80" fill="currentColor"/>
+  <ellipse cx="250" cy="230" rx="180" ry="60" fill="currentColor"/>
+  
+  <ellipse cx="250" cy="230" rx="180" ry="60" fill="#fff" opacity="0.2"/>
+  <rect x="70" y="230" width="360" height="80" fill="currentColor"/>
+  <ellipse cx="250" cy="310" rx="180" ry="60" fill="currentColor"/>
+  
+  <ellipse cx="250" cy="310" rx="180" ry="60" fill="#fff" opacity="0.2"/>
+  <rect x="70" y="310" width="360" height="40" fill="currentColor"/>
+  <ellipse cx="250" cy="350" rx="180" ry="60" fill="currentColor"/>
+  
+  <!-- Indicator lights -->
+  <circle cx="100" cy="180" r="8" fill="#00ff00" opacity="0.8"/>
+  <circle cx="100" cy="205" r="8" fill="#00ff00" opacity="0.8"/>
+  <circle cx="100" cy="260" r="8" fill="#00ff00" opacity="0.8"/>
+  <circle cx="100" cy="285" r="8" fill="#00ff00" opacity="0.8"/>
+  <circle cx="100" cy="330" r="8" fill="#00ff00" opacity="0.8"/>
+</svg>

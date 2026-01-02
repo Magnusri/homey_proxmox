@@ -173,6 +173,7 @@ module.exports = class ProxmoxDriver extends Homey.Driver {
               tokenID,
               tokenSecret,
             },
+            icon: '/drivers/proxmox/assets/icon-node.svg',
           });
 
           // Get LXC containers for each node
@@ -193,6 +194,7 @@ module.exports = class ProxmoxDriver extends Homey.Driver {
                   tokenID,
                   tokenSecret,
                 },
+                icon: '/drivers/proxmox/assets/icon-lxc.svg',
               });
             }
           } catch (error) {
@@ -217,6 +219,7 @@ module.exports = class ProxmoxDriver extends Homey.Driver {
                   tokenID,
                   tokenSecret,
                 },
+                icon: '/drivers/proxmox/assets/icon-vm.svg',
               });
             }
           } catch (error) {
@@ -255,6 +258,7 @@ module.exports = class ProxmoxDriver extends Homey.Driver {
                   tokenID,
                   tokenSecret,
                 },
+                icon: '/drivers/proxmox/assets/icon-storage.svg',
               });
             } else {
               this.log(`Skipping storage ${storage.storage} - no node available`);

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500">
+  <!-- Server/Node icon - stacked server representation -->
+  <rect x="100" y="100" width="300" height="80" rx="10" fill="currentColor"/>
+  <circle cx="140" cy="140" r="12" fill="#fff"/>
+  <circle cx="170" cy="140" r="12" fill="#fff"/>
+  <rect x="220" y="125" width="160" height="8" rx="4" fill="#fff"/>
+  <rect x="220" y="147" width="100" height="8" rx="4" fill="#fff"/>
+  
+  <rect x="100" y="210" width="300" height="80" rx="10" fill="currentColor"/>
+  <circle cx="140" cy="250" r="12" fill="#fff"/>
+  <circle cx="170" cy="250" r="12" fill="#fff"/>
+  <rect x="220" y="235" width="160" height="8" rx="4" fill="#fff"/>
+  <rect x="220" y="257" width="100" height="8" rx="4" fill="#fff"/>
+  
+  <rect x="100" y="320" width="300" height="80" rx="10" fill="currentColor"/>
+  <circle cx="140" cy="360" r="12" fill="#fff"/>
+  <circle cx="170" cy="360" r="12" fill="#fff"/>
+  <rect x="220" y="345" width="160" height="8" rx="4" fill="#fff"/>
+  <rect x="220" y="367" width="100" height="8" rx="4" fill="#fff"/>
+</svg>
