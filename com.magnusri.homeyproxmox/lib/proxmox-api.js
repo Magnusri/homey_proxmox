@@ -129,6 +129,13 @@ class ProxmoxAPI {
   }
 
   /**
+   * Restart LXC container
+   */
+  static async restartLXC(host, port, node, vmid, tokenID, tokenSecret) {
+    return this.request(host, port, `/nodes/${node}/lxc/${vmid}/status/reboot`, tokenID, tokenSecret, 'POST');
+  }
+
+  /**
    * Start VM
    */
   static async startVM(host, port, node, vmid, tokenID, tokenSecret) {
@@ -140,6 +147,13 @@ class ProxmoxAPI {
    */
   static async stopVM(host, port, node, vmid, tokenID, tokenSecret) {
     return this.request(host, port, `/nodes/${node}/qemu/${vmid}/status/stop`, tokenID, tokenSecret, 'POST');
+  }
+
+  /**
+   * Restart VM
+   */
+  static async restartVM(host, port, node, vmid, tokenID, tokenSecret) {
+    return this.request(host, port, `/nodes/${node}/qemu/${vmid}/status/reboot`, tokenID, tokenSecret, 'POST');
   }
 
   /**

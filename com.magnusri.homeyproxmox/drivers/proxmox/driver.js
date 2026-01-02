@@ -114,15 +114,41 @@ module.exports = class ProxmoxDriver extends Homey.Driver {
     this.homey.flow.getActionCard('restart_vm')
       .registerRunListener(async (args) => {
         const data = args.device.getData();
-        // Only allow start/stop for VMs and LXCs, not nodes or storage
+        const settings = args.device.getSettings();
+
+        // Only allow restart for VMs and LXCs, not nodes or storage
         if (data.type !== 'vm' && data.type !== 'lxc') {
           throw new Error('This device cannot be restarted');
         }
-        // Stop then start
-        await args.device.setCapabilityValue('onoff', false);
-        // Wait a bit before starting
-        await new Promise((resolve) => setTimeout(resolve, 5000));
-        await args.device.setCapabilityValue('onoff', true);
+
+        try {
+          if (data.type === 'lxc') {
+            args.device.log(`Restarting LXC ${data.vmid} on node ${data.node}`);
+            await ProxmoxAPI.restartLXC(
+              settings.host, settings.port, data.node, data.vmid,
+              settings.tokenID, settings.tokenSecret,
+            );
+            args.device.log(`LXC ${data.vmid} restart command sent successfully`);
+          } else if (data.type === 'vm') {
+            args.device.log(`Restarting VM ${data.vmid} on node ${data.node}`);
+            await ProxmoxAPI.restartVM(
+              settings.host, settings.port, data.node, data.vmid,
+              settings.tokenID, settings.tokenSecret,
+            );
+            args.device.log(`VM ${data.vmid} restart command sent successfully`);
+          }
+
+          // Update status after a short delay to reflect the change
+          setTimeout(() => {
+            args.device.log('Updating status after restart');
+            args.device.updateStatus().catch(args.device.error);
+          }, 3000);
+
+          return true;
+        } catch (error) {
+          args.device.error('Failed to restart:', error.message);
+          throw new Error(`Failed to restart ${data.type}: ${error.message}`);
+        }
       });
   }
 
