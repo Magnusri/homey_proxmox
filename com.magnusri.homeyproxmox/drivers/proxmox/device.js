@@ -572,6 +572,87 @@ module.exports = class ProxmoxDevice extends Homey.Device {
         if (this.hasCapability('alarm_generic')) {
           await this.setCapabilityValue('alarm_generic', false).catch(this.error);
         }
+      } else if (data.type === 'storage') {
+        // Get storage status
+        const status = await ProxmoxAPI.getStorageStatus(
+          settings.host, settings.port, data.node, data.storage,
+          settings.tokenID, settings.tokenSecret,
+        );
+
+        // Storage is always "online" if we can get status
+        const isOnline = status !== null && status !== undefined;
+        if (this.hasCapability('onoff')) {
+          await this.setCapabilityValue('onoff', isOnline);
+        }
+
+        if (isOnline) {
+          // Storage metrics
+          // avail = available space in bytes
+          // used = used space in bytes
+          // total = total space in bytes
+          if (status.avail !== undefined && status.total !== undefined && status.total > 0) {
+            const used = status.used || (status.total - status.avail);
+            const diskPercent = (used / status.total) * 100;
+            if (this.hasCapability('measure_disk')) {
+              await this.setCapabilityValue('measure_disk', this.roundToOneDecimal(diskPercent));
+            }
+          }
+
+          // Storage doesn't have CPU/memory/network metrics, set to 0
+          if (this.hasCapability('measure_cpu')) {
+            await this.setCapabilityValue('measure_cpu', 0);
+          }
+          if (this.hasCapability('measure_memory')) {
+            await this.setCapabilityValue('measure_memory', 0);
+          }
+          if (this.hasCapability('measure_network_in')) {
+            await this.setCapabilityValue('measure_network_in', 0);
+          }
+          if (this.hasCapability('measure_network_out')) {
+            await this.setCapabilityValue('measure_network_out', 0);
+          }
+          if (this.hasCapability('measure_disk_read')) {
+            await this.setCapabilityValue('measure_disk_read', 0);
+          }
+          if (this.hasCapability('measure_disk_write')) {
+            await this.setCapabilityValue('measure_disk_write', 0);
+          }
+          if (this.hasCapability('sensor_uptime')) {
+            await this.setCapabilityValue('sensor_uptime', 0);
+          }
+
+          // Update alarms - storage doesn't overheat or have CPU/mem issues
+          if (this.hasCapability('alarm_heat')) {
+            await this.setCapabilityValue('alarm_heat', false);
+          }
+          if (this.hasCapability('alarm_connectivity')) {
+            await this.setCapabilityValue('alarm_connectivity', false);
+          }
+
+          // Check disk space threshold
+          const diskUsage = this.getCapabilityValue('measure_disk') || 0;
+          const diskFree = 100 - diskUsage;
+          if (!this.thresholdTracking.diskSpace) {
+            this.thresholdTracking.diskSpace = { below: false };
+          }
+
+          if (diskFree < 20 && !this.thresholdTracking.diskSpace.below) {
+            this.thresholdTracking.diskSpace.below = true;
+            if (this.driver && this.driver.diskSpaceLowTrigger) {
+              this.driver.diskSpaceLowTrigger.trigger(this, { disk_free: diskFree }).catch(this.error);
+            }
+          } else if (diskFree > 25) {
+            this.thresholdTracking.diskSpace.below = false;
+          }
+        }
+
+        this.log(`Storage ${data.storage} disk usage: ${this.getCapabilityValue('measure_disk')}%`);
+
+        // Mark device as available and clear error alarms
+        await this.setAvailable().catch(this.error);
+        if (this.hasCapability('alarm_generic')) {
+          await this.setCapabilityValue('alarm_generic', false).catch(this.error);
+        }
       }
     } catch (error) {
       this.error('Failed to update status:', error.message);

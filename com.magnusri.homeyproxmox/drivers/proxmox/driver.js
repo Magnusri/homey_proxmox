@@ -228,21 +228,37 @@ module.exports = class ProxmoxDriver extends Homey.Driver {
         try {
           const storages = await ProxmoxAPI.getStorage(host, port, tokenID, tokenSecret);
           for (const storage of storages.filter((s) => s.type === 'cephfs')) {
-            storageDevices.push({
-              name: `CephFS: ${storage.storage}`,
-              data: {
-                id: `storage-${storage.storage}`,
-                type: 'storage',
-                storageType: storage.type,
-                storage: storage.storage,
-              },
-              settings: {
-                host,
-                port,
-                tokenID,
-                tokenSecret,
-              },
-            });
+            // Storage needs to be associated with a node to query status
+            // Use the first available node from the nodes array, or the first node in the cluster
+            let storageNode = null;
+            if (storage.nodes && storage.nodes.length > 0) {
+              // Storage has specific nodes assigned
+              storageNode = storage.nodes[0];
+            } else if (nodes && nodes.length > 0) {
+              // Use the first available node in the cluster
+              storageNode = nodes[0].node;
+            }
+
+            if (storageNode) {
+              storageDevices.push({
+                name: `CephFS: ${storage.storage}`,
+                data: {
+                  id: `storage-${storage.storage}`,
+                  type: 'storage',
+                  storageType: storage.type,
+                  storage: storage.storage,
+                  node: storageNode,
+                },
+                settings: {
+                  host,
+                  port,
+                  tokenID,
+                  tokenSecret,
+                },
+              });
+            } else {
+              this.log(`Skipping storage ${storage.storage} - no node available`);
+            }
           }
         } catch (error) {
           this.log('Could not get storage:', error.message);

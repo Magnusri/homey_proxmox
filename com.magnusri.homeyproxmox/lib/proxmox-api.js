@@ -141,6 +141,13 @@ class ProxmoxAPI {
   static async stopVM(host, port, node, vmid, tokenID, tokenSecret) {
     return this.request(host, port, `/nodes/${node}/qemu/${vmid}/status/stop`, tokenID, tokenSecret, 'POST');
   }
+
+  /**
+   * Get storage status
+   */
+  static async getStorageStatus(host, port, node, storage, tokenID, tokenSecret) {
+    return this.request(host, port, `/nodes/${node}/storage/${storage}/status`, tokenID, tokenSecret);
+  }
 }
 
 module.exports = ProxmoxAPI;
