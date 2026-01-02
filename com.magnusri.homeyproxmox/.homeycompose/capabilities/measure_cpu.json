@@ -9,6 +9,7 @@
   "getable": true,
   "setable": false,
   "uiComponent": "sensor",
+  "insights": true,
   "min": 0,
   "max": 100,
   "decimals": 1
