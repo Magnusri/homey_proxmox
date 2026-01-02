@@ -13,9 +13,9 @@
   <ellipse cx="250" cy="350" rx="180" ry="60" fill="currentColor"/>
   
   <!-- Indicator lights -->
-  <circle cx="100" cy="180" r="8" fill="#00ff00" opacity="0.8"/>
-  <circle cx="100" cy="205" r="8" fill="#00ff00" opacity="0.8"/>
-  <circle cx="100" cy="260" r="8" fill="#00ff00" opacity="0.8"/>
-  <circle cx="100" cy="285" r="8" fill="#00ff00" opacity="0.8"/>
-  <circle cx="100" cy="330" r="8" fill="#00ff00" opacity="0.8"/>
+  <circle cx="100" cy="180" r="8" fill="currentColor" opacity="0.5"/>
+  <circle cx="100" cy="205" r="8" fill="currentColor" opacity="0.5"/>
+  <circle cx="100" cy="260" r="8" fill="currentColor" opacity="0.5"/>
+  <circle cx="100" cy="285" r="8" fill="currentColor" opacity="0.5"/>
+  <circle cx="100" cy="330" r="8" fill="currentColor" opacity="0.5"/>
 </svg>
