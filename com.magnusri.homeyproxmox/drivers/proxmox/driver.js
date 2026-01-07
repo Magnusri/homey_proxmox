@@ -208,35 +208,11 @@ module.exports = class ProxmoxDriver extends Homey.Driver {
     const { app } = this.homey;
     const existingCredentials = app.getCredentials();
 
-    // Handler to provide existing credentials to the login form
+    // Handler to provide existing credentials to the login form for pre-filling
     session.setHandler('get_credentials', async () => {
       this.log('Providing existing credentials to login form');
       return existingCredentials;
     });
-
-    // If credentials exist, try to use them automatically
-    if (existingCredentials) {
-      this.log('Found existing credentials, attempting auto-login');
-      host = existingCredentials.host;
-      port = existingCredentials.port;
-      tokenID = existingCredentials.tokenID;
-      tokenSecret = existingCredentials.tokenSecret;
-
-      try {
-        // Test the existing credentials
-        await ProxmoxAPI.testConnection(host, port, tokenID, tokenSecret);
-        this.log('Existing credentials validated successfully');
-        // Credentials work, skip to device list
-        // The showView method will be called by the pair process
-      } catch (error) {
-        this.log('Existing credentials failed validation:', error.message);
-        // Credentials don't work, user will need to enter new ones
-        host = '';
-        port = '';
-        tokenID = '';
-        tokenSecret = '';
-      }
-    }
 
     session.setHandler('login', async (data) => {
       host = data.host;

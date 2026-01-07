@@ -108,7 +108,11 @@
     // Request existing credentials when form loads
     Homey.ready(() => {
       Homey.emit('get_credentials', null, (err, credentials) => {
-        if (!err && credentials) {
+        if (err) {
+          console.error('Error retrieving credentials:', err);
+          return;
+        }
+        if (credentials) {
           // Pre-fill form with existing credentials
           document.getElementById('host').value = credentials.host || '';
           document.getElementById('port').value = credentials.port || '8006';
