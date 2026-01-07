@@ -455,7 +455,7 @@ module.exports = class ProxmoxDevice extends Homey.Device {
             settings.tokenID, settings.tokenSecret,
           );
         } catch (error) {
-          // If status check fails, try to find if VM was migrated
+          // If status check fails, try to find if LXC was migrated
           this.log(`Failed to get LXC status on node ${data.node}, searching for migration...`);
           const newNode = await ProxmoxAPI.findVMNode(
             settings.host, settings.port, data.vmid, data.type,
