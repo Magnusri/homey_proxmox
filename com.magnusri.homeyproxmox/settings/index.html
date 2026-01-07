@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+      padding: 20px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    h1 {
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+    .info-box {
+      background-color: #e7f3ff;
+      border-left: 4px solid #2196F3;
+      padding: 12px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      color: #0c5c9e;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+    input:focus {
+      outline: none;
+      border-color: #4CAF50;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 500;
+      margin-top: 10px;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+    .success {
+      color: #4CAF50;
+      margin-top: 10px;
+      display: none;
+    }
+    .error {
+      color: #f44336;
+      margin-top: 10px;
+      display: none;
+    }
+    .help-text {
+      font-size: 12px;
+      color: #666;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Proxmox Credentials</h1>
+  
+  <div class="info-box">
+    ℹ️ These credentials will be used for all new devices. Changes here will not affect existing devices unless you update their settings individually.
+  </div>
+
+  <form id="settingsForm">
+    <div class="form-group">
+      <label for="host">Proxmox Host</label>
+      <input type="text" id="host" name="host" placeholder="192.168.1.100">
+      <div class="help-text">IP address or hostname of your Proxmox server</div>
+    </div>
+
+    <div class="form-group">
+      <label for="port">Port</label>
+      <input type="number" id="port" name="port" placeholder="8006">
+      <div class="help-text">Default Proxmox port is 8006</div>
+    </div>
+
+    <div class="form-group">
+      <label for="tokenID">Token ID</label>
+      <input type="text" id="tokenID" name="tokenID" placeholder="user@realm!tokenname">
+      <div class="help-text">Format: user@realm!tokenname (e.g., root@pam!mytoken)</div>
+    </div>
+
+    <div class="form-group">
+      <label for="tokenSecret">Token Secret</label>
+      <input type="password" id="tokenSecret" name="tokenSecret" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+      <div class="help-text">Your Proxmox API token secret</div>
+    </div>
+
+    <button type="submit" id="saveBtn">Save Credentials</button>
+    <div class="success" id="successMsg">Credentials saved successfully!</div>
+    <div class="error" id="errorMsg"></div>
+  </form>
+
+  <script>
+    // Wait for Homey to be ready
+    function onHomeyReady(Homey) {
+      const form = document.getElementById('settingsForm');
+      const saveBtn = document.getElementById('saveBtn');
+      const successMsg = document.getElementById('successMsg');
+      const errorMsg = document.getElementById('errorMsg');
+
+      // Load existing credentials
+      Homey.get('proxmox_credentials', function(err, credentials) {
+        if (!err && credentials) {
+          document.getElementById('host').value = credentials.host || '';
+          document.getElementById('port').value = credentials.port || '8006';
+          document.getElementById('tokenID').value = credentials.tokenID || '';
+          document.getElementById('tokenSecret').value = credentials.tokenSecret || '';
+        }
+      });
+
+      // Save credentials
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const host = document.getElementById('host').value.trim();
+        const port = document.getElementById('port').value.trim() || '8006';
+        const tokenID = document.getElementById('tokenID').value.trim();
+        const tokenSecret = document.getElementById('tokenSecret').value.trim();
+
+        // Validate required fields
+        if (!host || !tokenID || !tokenSecret) {
+          errorMsg.textContent = 'Please fill in all required fields';
+          errorMsg.style.display = 'block';
+          successMsg.style.display = 'none';
+          return;
+        }
+
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving...';
+        errorMsg.style.display = 'none';
+        successMsg.style.display = 'none';
+
+        const credentials = {
+          host: host,
+          port: port,
+          tokenID: tokenID,
+          tokenSecret: tokenSecret
+        };
+
+        Homey.set('proxmox_credentials', credentials, function(err) {
+          if (err) {
+            errorMsg.textContent = 'Failed to save credentials: ' + err.message;
+            errorMsg.style.display = 'block';
+            successMsg.style.display = 'none';
+          } else {
+            successMsg.style.display = 'block';
+            errorMsg.style.display = 'none';
+            
+            // Hide success message after 3 seconds
+            setTimeout(function() {
+              successMsg.style.display = 'none';
+            }, 3000);
+          }
+          
+          saveBtn.disabled = false;
+          saveBtn.textContent = 'Save Credentials';
+        });
+      });
+
+      Homey.ready();
+    }
+  </script>
+</body>
+</html>

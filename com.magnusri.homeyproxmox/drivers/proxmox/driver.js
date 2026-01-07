@@ -204,6 +204,16 @@ module.exports = class ProxmoxDriver extends Homey.Driver {
     let tokenID = '';
     let tokenSecret = '';
 
+    // Try to load existing credentials from app settings
+    const { app } = this.homey;
+    const existingCredentials = app.getCredentials();
+
+    // Handler to provide existing credentials to the login form for pre-filling
+    session.setHandler('get_credentials', async () => {
+      this.log('Providing existing credentials to login form');
+      return existingCredentials;
+    });
+
     session.setHandler('login', async (data) => {
       host = data.host;
       port = data.port || '8006';
@@ -212,6 +222,17 @@ module.exports = class ProxmoxDriver extends Homey.Driver {
 
       try {
         const result = await ProxmoxAPI.testConnection(host, port, tokenID, tokenSecret);
+
+        // Store credentials at app level for future use
+        const credentials = {
+          host,
+          port,
+          tokenID,
+          tokenSecret,
+        };
+        app.setCredentials(credentials);
+        this.log('Credentials stored at app level');
+
         return result;
       } catch (error) {
         this.error('Login failed:', error.message);
