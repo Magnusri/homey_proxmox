@@ -193,11 +193,12 @@ class ProxmoxAPI {
           }
         } catch (error) {
           // Node might be unreachable, continue checking other nodes
+          // This is expected in clusters with offline nodes
         }
       }
       return null;
     } catch (error) {
-      // Failed to get nodes list
+      // Failed to get nodes list - cluster connectivity issue
       return null;
     }
   }

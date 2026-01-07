@@ -122,32 +122,66 @@ module.exports = class ProxmoxDriver extends Homey.Driver {
         }
 
         try {
-          // Check if VM/LXC has migrated to a different node
-          const currentNode = await ProxmoxAPI.findVMNode(
-            settings.host, settings.port, data.vmid, data.type,
-            settings.tokenID, settings.tokenSecret,
-          );
-
-          if (currentNode && currentNode !== data.node) {
-            args.device.log(`${data.type} ${data.vmid} migrated from ${data.node} to ${currentNode}`);
-            data.node = currentNode;
-            await args.device.setStoreValue('node', currentNode);
-          }
-
           if (data.type === 'lxc') {
-            args.device.log(`Restarting LXC ${data.vmid} on node ${data.node}`);
-            await ProxmoxAPI.restartLXC(
-              settings.host, settings.port, data.node, data.vmid,
-              settings.tokenID, settings.tokenSecret,
-            );
-            args.device.log(`LXC ${data.vmid} restart command sent successfully`);
+            try {
+              args.device.log(`Restarting LXC ${data.vmid} on node ${data.node}`);
+              await ProxmoxAPI.restartLXC(
+                settings.host, settings.port, data.node, data.vmid,
+                settings.tokenID, settings.tokenSecret,
+              );
+              args.device.log(`LXC ${data.vmid} restart command sent successfully`);
+            } catch (error) {
+              // If restart fails, check if LXC was migrated
+              args.device.log(`Failed to restart LXC on node ${data.node}, searching for migration...`);
+              const newNode = await ProxmoxAPI.findVMNode(
+                settings.host, settings.port, data.vmid, data.type,
+                settings.tokenID, settings.tokenSecret,
+              );
+
+              if (newNode && newNode !== data.node) {
+                args.device.log(`LXC ${data.vmid} migrated from ${data.node} to ${newNode}`);
+                data.node = newNode;
+                await args.device.setStoreValue('node', newNode);
+                // Retry with new node
+                await ProxmoxAPI.restartLXC(
+                  settings.host, settings.port, data.node, data.vmid,
+                  settings.tokenID, settings.tokenSecret,
+                );
+              } else {
+                // Real error, not migration
+                throw error;
+              }
+            }
           } else if (data.type === 'vm') {
-            args.device.log(`Restarting VM ${data.vmid} on node ${data.node}`);
-            await ProxmoxAPI.restartVM(
-              settings.host, settings.port, data.node, data.vmid,
-              settings.tokenID, settings.tokenSecret,
-            );
-            args.device.log(`VM ${data.vmid} restart command sent successfully`);
+            try {
+              args.device.log(`Restarting VM ${data.vmid} on node ${data.node}`);
+              await ProxmoxAPI.restartVM(
+                settings.host, settings.port, data.node, data.vmid,
+                settings.tokenID, settings.tokenSecret,
+              );
+              args.device.log(`VM ${data.vmid} restart command sent successfully`);
+            } catch (error) {
+              // If restart fails, check if VM was migrated
+              args.device.log(`Failed to restart VM on node ${data.node}, searching for migration...`);
+              const newNode = await ProxmoxAPI.findVMNode(
+                settings.host, settings.port, data.vmid, data.type,
+                settings.tokenID, settings.tokenSecret,
+              );
+
+              if (newNode && newNode !== data.node) {
+                args.device.log(`VM ${data.vmid} migrated from ${data.node} to ${newNode}`);
+                data.node = newNode;
+                await args.device.setStoreValue('node', newNode);
+                // Retry with new node
+                await ProxmoxAPI.restartVM(
+                  settings.host, settings.port, data.node, data.vmid,
+                  settings.tokenID, settings.tokenSecret,
+                );
+              } else {
+                // Real error, not migration
+                throw error;
+              }
+            }
           }
 
           // Update status after a short delay to reflect the change

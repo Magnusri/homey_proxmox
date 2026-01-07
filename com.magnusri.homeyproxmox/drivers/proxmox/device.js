@@ -736,51 +736,97 @@ module.exports = class ProxmoxDevice extends Homey.Device {
     this.log(`${data.type} ${data.id}: Changing power state to ${value ? 'ON' : 'OFF'}`);
 
     try {
-      // Check if VM/LXC has migrated to a different node
-      if (data.type === 'lxc' || data.type === 'vm') {
-        const currentNode = await ProxmoxAPI.findVMNode(
-          settings.host, settings.port, data.vmid, data.type,
-          settings.tokenID, settings.tokenSecret,
-        );
-
-        if (currentNode && currentNode !== data.node) {
-          this.log(`${data.type} ${data.vmid} migrated from ${data.node} to ${currentNode}`);
-          data.node = currentNode;
-          await this.setStoreValue('node', currentNode);
-        }
-      }
-
       if (data.type === 'lxc') {
-        if (value) {
-          this.log(`Starting LXC ${data.vmid} on node ${data.node}`);
-          await ProxmoxAPI.startLXC(
-            settings.host, settings.port, data.node, data.vmid,
+        try {
+          if (value) {
+            this.log(`Starting LXC ${data.vmid} on node ${data.node}`);
+            await ProxmoxAPI.startLXC(
+              settings.host, settings.port, data.node, data.vmid,
+              settings.tokenID, settings.tokenSecret,
+            );
+            this.log(`LXC ${data.vmid} start command sent successfully`);
+          } else {
+            this.log(`Stopping LXC ${data.vmid} on node ${data.node}`);
+            await ProxmoxAPI.stopLXC(
+              settings.host, settings.port, data.node, data.vmid,
+              settings.tokenID, settings.tokenSecret,
+            );
+            this.log(`LXC ${data.vmid} stop command sent successfully`);
+          }
+        } catch (error) {
+          // If command fails, check if LXC was migrated
+          this.log(`Failed to ${value ? 'start' : 'stop'} LXC on node ${data.node}, searching for migration...`);
+          const newNode = await ProxmoxAPI.findVMNode(
+            settings.host, settings.port, data.vmid, data.type,
             settings.tokenID, settings.tokenSecret,
           );
-          this.log(`LXC ${data.vmid} start command sent successfully`);
-        } else {
-          this.log(`Stopping LXC ${data.vmid} on node ${data.node}`);
-          await ProxmoxAPI.stopLXC(
-            settings.host, settings.port, data.node, data.vmid,
-            settings.tokenID, settings.tokenSecret,
-          );
-          this.log(`LXC ${data.vmid} stop command sent successfully`);
+
+          if (newNode && newNode !== data.node) {
+            this.log(`LXC ${data.vmid} migrated from ${data.node} to ${newNode}`);
+            data.node = newNode;
+            await this.setStoreValue('node', newNode);
+            // Retry with new node
+            if (value) {
+              await ProxmoxAPI.startLXC(
+                settings.host, settings.port, data.node, data.vmid,
+                settings.tokenID, settings.tokenSecret,
+              );
+            } else {
+              await ProxmoxAPI.stopLXC(
+                settings.host, settings.port, data.node, data.vmid,
+                settings.tokenID, settings.tokenSecret,
+              );
+            }
+          } else {
+            // Real error, not migration
+            throw error;
+          }
         }
       } else if (data.type === 'vm') {
-        if (value) {
-          this.log(`Starting VM ${data.vmid} on node ${data.node}`);
-          await ProxmoxAPI.startVM(
-            settings.host, settings.port, data.node, data.vmid,
+        try {
+          if (value) {
+            this.log(`Starting VM ${data.vmid} on node ${data.node}`);
+            await ProxmoxAPI.startVM(
+              settings.host, settings.port, data.node, data.vmid,
+              settings.tokenID, settings.tokenSecret,
+            );
+            this.log(`VM ${data.vmid} start command sent successfully`);
+          } else {
+            this.log(`Stopping VM ${data.vmid} on node ${data.node}`);
+            await ProxmoxAPI.stopVM(
+              settings.host, settings.port, data.node, data.vmid,
+              settings.tokenID, settings.tokenSecret,
+            );
+            this.log(`VM ${data.vmid} stop command sent successfully`);
+          }
+        } catch (error) {
+          // If command fails, check if VM was migrated
+          this.log(`Failed to ${value ? 'start' : 'stop'} VM on node ${data.node}, searching for migration...`);
+          const newNode = await ProxmoxAPI.findVMNode(
+            settings.host, settings.port, data.vmid, data.type,
             settings.tokenID, settings.tokenSecret,
           );
-          this.log(`VM ${data.vmid} start command sent successfully`);
-        } else {
-          this.log(`Stopping VM ${data.vmid} on node ${data.node}`);
-          await ProxmoxAPI.stopVM(
-            settings.host, settings.port, data.node, data.vmid,
-            settings.tokenID, settings.tokenSecret,
-          );
-          this.log(`VM ${data.vmid} stop command sent successfully`);
+
+          if (newNode && newNode !== data.node) {
+            this.log(`VM ${data.vmid} migrated from ${data.node} to ${newNode}`);
+            data.node = newNode;
+            await this.setStoreValue('node', newNode);
+            // Retry with new node
+            if (value) {
+              await ProxmoxAPI.startVM(
+                settings.host, settings.port, data.node, data.vmid,
+                settings.tokenID, settings.tokenSecret,
+              );
+            } else {
+              await ProxmoxAPI.stopVM(
+                settings.host, settings.port, data.node, data.vmid,
+                settings.tokenID, settings.tokenSecret,
+              );
+            }
+          } else {
+            // Real error, not migration
+            throw error;
+          }
         }
       }
 
