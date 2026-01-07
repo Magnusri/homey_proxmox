@@ -448,10 +448,34 @@ module.exports = class ProxmoxDevice extends Homey.Device {
           await this.setCapabilityValue('alarm_generic', false).catch(this.error);
         }
       } else if (data.type === 'lxc') {
-        const status = await ProxmoxAPI.getLXCStatus(
-          settings.host, settings.port, data.node, data.vmid,
-          settings.tokenID, settings.tokenSecret,
-        );
+        let status;
+        try {
+          status = await ProxmoxAPI.getLXCStatus(
+            settings.host, settings.port, data.node, data.vmid,
+            settings.tokenID, settings.tokenSecret,
+          );
+        } catch (error) {
+          // If status check fails, try to find if VM was migrated
+          this.log(`Failed to get LXC status on node ${data.node}, searching for migration...`);
+          const newNode = await ProxmoxAPI.findVMNode(
+            settings.host, settings.port, data.vmid, data.type,
+            settings.tokenID, settings.tokenSecret,
+          );
+
+          if (newNode && newNode !== data.node) {
+            this.log(`LXC ${data.vmid} migrated from ${data.node} to ${newNode}`);
+            data.node = newNode;
+            await this.setStoreValue('node', newNode);
+            // Retry with new node
+            status = await ProxmoxAPI.getLXCStatus(
+              settings.host, settings.port, data.node, data.vmid,
+              settings.tokenID, settings.tokenSecret,
+            );
+          } else {
+            // Real error, not migration
+            throw error;
+          }
+        }
         const isRunning = status.status === 'running';
         await this.setCapabilityValue('onoff', isRunning);
 
@@ -512,10 +536,34 @@ module.exports = class ProxmoxDevice extends Homey.Device {
           await this.setCapabilityValue('alarm_generic', false).catch(this.error);
         }
       } else if (data.type === 'vm') {
-        const status = await ProxmoxAPI.getVMStatus(
-          settings.host, settings.port, data.node, data.vmid,
-          settings.tokenID, settings.tokenSecret,
-        );
+        let status;
+        try {
+          status = await ProxmoxAPI.getVMStatus(
+            settings.host, settings.port, data.node, data.vmid,
+            settings.tokenID, settings.tokenSecret,
+          );
+        } catch (error) {
+          // If status check fails, try to find if VM was migrated
+          this.log(`Failed to get VM status on node ${data.node}, searching for migration...`);
+          const newNode = await ProxmoxAPI.findVMNode(
+            settings.host, settings.port, data.vmid, data.type,
+            settings.tokenID, settings.tokenSecret,
+          );
+
+          if (newNode && newNode !== data.node) {
+            this.log(`VM ${data.vmid} migrated from ${data.node} to ${newNode}`);
+            data.node = newNode;
+            await this.setStoreValue('node', newNode);
+            // Retry with new node
+            status = await ProxmoxAPI.getVMStatus(
+              settings.host, settings.port, data.node, data.vmid,
+              settings.tokenID, settings.tokenSecret,
+            );
+          } else {
+            // Real error, not migration
+            throw error;
+          }
+        }
         const isRunning = status.status === 'running';
         await this.setCapabilityValue('onoff', isRunning);
 
@@ -688,6 +736,20 @@ module.exports = class ProxmoxDevice extends Homey.Device {
     this.log(`${data.type} ${data.id}: Changing power state to ${value ? 'ON' : 'OFF'}`);
 
     try {
+      // Check if VM/LXC has migrated to a different node
+      if (data.type === 'lxc' || data.type === 'vm') {
+        const currentNode = await ProxmoxAPI.findVMNode(
+          settings.host, settings.port, data.vmid, data.type,
+          settings.tokenID, settings.tokenSecret,
+        );
+
+        if (currentNode && currentNode !== data.node) {
+          this.log(`${data.type} ${data.vmid} migrated from ${data.node} to ${currentNode}`);
+          data.node = currentNode;
+          await this.setStoreValue('node', currentNode);
+        }
+      }
+
       if (data.type === 'lxc') {
         if (value) {
           this.log(`Starting LXC ${data.vmid} on node ${data.node}`);

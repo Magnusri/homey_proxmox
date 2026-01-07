@@ -162,6 +162,45 @@ class ProxmoxAPI {
   static async getStorageStatus(host, port, node, storage, tokenID, tokenSecret) {
     return this.request(host, port, `/nodes/${node}/storage/${storage}/status`, tokenID, tokenSecret);
   }
+
+  /**
+   * Find which node currently hosts a VM or LXC container
+   * Searches all nodes in the cluster to locate the VM/LXC by VMID
+   * @param {string} host - Proxmox host
+   * @param {string} port - Proxmox port
+   * @param {number} vmid - VM/LXC ID to find
+   * @param {string} type - Type ('lxc' or 'vm')
+   * @param {string} tokenID - API token ID
+   * @param {string} tokenSecret - API token secret
+   * @returns {Promise<string|null>} Node name where VM/LXC is located, or null if not found
+   */
+  static async findVMNode(host, port, vmid, type, tokenID, tokenSecret) {
+    try {
+      const nodes = await this.getNodes(host, port, tokenID, tokenSecret);
+
+      for (const node of nodes) {
+        try {
+          if (type === 'lxc') {
+            const lxcs = await this.getLXCs(host, port, node.node, tokenID, tokenSecret);
+            if (lxcs.find((lxc) => lxc.vmid === vmid)) {
+              return node.node;
+            }
+          } else if (type === 'vm') {
+            const vms = await this.getVMs(host, port, node.node, tokenID, tokenSecret);
+            if (vms.find((vm) => vm.vmid === vmid)) {
+              return node.node;
+            }
+          }
+        } catch (error) {
+          // Node might be unreachable, continue checking other nodes
+        }
+      }
+      return null;
+    } catch (error) {
+      // Failed to get nodes list
+      return null;
+    }
+  }
 }
 
 module.exports = ProxmoxAPI;

@@ -122,6 +122,18 @@ module.exports = class ProxmoxDriver extends Homey.Driver {
         }
 
         try {
+          // Check if VM/LXC has migrated to a different node
+          const currentNode = await ProxmoxAPI.findVMNode(
+            settings.host, settings.port, data.vmid, data.type,
+            settings.tokenID, settings.tokenSecret,
+          );
+
+          if (currentNode && currentNode !== data.node) {
+            args.device.log(`${data.type} ${data.vmid} migrated from ${data.node} to ${currentNode}`);
+            data.node = currentNode;
+            await args.device.setStoreValue('node', currentNode);
+          }
+
           if (data.type === 'lxc') {
             args.device.log(`Restarting LXC ${data.vmid} on node ${data.node}`);
             await ProxmoxAPI.restartLXC(
