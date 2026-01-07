@@ -54,11 +54,23 @@
       color: #666;
       margin-top: 5px;
     }
+    .info-box {
+      background-color: #e7f3ff;
+      border-left: 4px solid #2196F3;
+      padding: 12px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      color: #0c5c9e;
+    }
   </style>
 </head>
 <body>
   <h2>Connect to Proxmox</h2>
   
+  <div class="info-box">
+    ℹ️ Your credentials will be saved and reused for future devices. You can update them later in the app settings.
+  </div>
+
   <form id="loginForm">
     <div class="form-group">
       <label for="host">Proxmox Host</label>
@@ -92,6 +104,19 @@
     const form = document.getElementById('loginForm');
     const submitBtn = document.getElementById('submitBtn');
     const errorMsg = document.getElementById('errorMsg');
+
+    // Request existing credentials when form loads
+    Homey.ready(() => {
+      Homey.emit('get_credentials', null, (err, credentials) => {
+        if (!err && credentials) {
+          // Pre-fill form with existing credentials
+          document.getElementById('host').value = credentials.host || '';
+          document.getElementById('port').value = credentials.port || '8006';
+          document.getElementById('tokenID').value = credentials.tokenID || '';
+          document.getElementById('tokenSecret').value = credentials.tokenSecret || '';
+        }
+      });
+    });
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();

@@ -204,6 +204,40 @@ module.exports = class ProxmoxDriver extends Homey.Driver {
     let tokenID = '';
     let tokenSecret = '';
 
+    // Try to load existing credentials from app settings
+    const { app } = this.homey;
+    const existingCredentials = app.getCredentials();
+
+    // Handler to provide existing credentials to the login form
+    session.setHandler('get_credentials', async () => {
+      this.log('Providing existing credentials to login form');
+      return existingCredentials;
+    });
+
+    // If credentials exist, try to use them automatically
+    if (existingCredentials) {
+      this.log('Found existing credentials, attempting auto-login');
+      host = existingCredentials.host;
+      port = existingCredentials.port;
+      tokenID = existingCredentials.tokenID;
+      tokenSecret = existingCredentials.tokenSecret;
+
+      try {
+        // Test the existing credentials
+        await ProxmoxAPI.testConnection(host, port, tokenID, tokenSecret);
+        this.log('Existing credentials validated successfully');
+        // Credentials work, skip to device list
+        // The showView method will be called by the pair process
+      } catch (error) {
+        this.log('Existing credentials failed validation:', error.message);
+        // Credentials don't work, user will need to enter new ones
+        host = '';
+        port = '';
+        tokenID = '';
+        tokenSecret = '';
+      }
+    }
+
     session.setHandler('login', async (data) => {
       host = data.host;
       port = data.port || '8006';
@@ -212,6 +246,17 @@ module.exports = class ProxmoxDriver extends Homey.Driver {
 
       try {
         const result = await ProxmoxAPI.testConnection(host, port, tokenID, tokenSecret);
+
+        // Store credentials at app level for future use
+        const credentials = {
+          host,
+          port,
+          tokenID,
+          tokenSecret,
+        };
+        app.setCredentials(credentials);
+        this.log('Credentials stored at app level');
+
         return result;
       } catch (error) {
         this.error('Login failed:', error.message);
